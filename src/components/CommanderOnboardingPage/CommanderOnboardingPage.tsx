@@ -10,8 +10,11 @@ import {
   Typography,
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import ShareIcon from "@mui/icons-material/Share";
+import LaunchIcon from "@mui/icons-material/Launch";
 import { toast } from "@/services/notificationService";
 import { createCommanderOnboarding } from "@/services/commanderOnboardingService";
+import ROUTES from "@/constants/routeConstants";
 
 export default function CommanderOnboardingPage() {
   const [fullName, setFullName] = useState("");
@@ -68,6 +71,24 @@ export default function CommanderOnboardingPage() {
       toast.success("לינק ההזמנה הועתק");
     } catch {
       toast.error("לא הצלחתי להעתיק את הלינק");
+    }
+  };
+
+  const shareInviteLink = async () => {
+    if (!inviteLink) return;
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({
+          title: "לינק הרשמה לחיילים",
+          text: "לינק הרשמה למערכת:",
+          url: inviteLink,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success("שיתוף לא נתמך במכשיר זה — הלינק הועתק");
+    } catch {
+      toast.error("לא הצלחתי לשתף את הלינק");
     }
   };
 
@@ -128,7 +149,15 @@ export default function CommanderOnboardingPage() {
                 <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
                   {inviteLink}
                 </Typography>
-                <Box>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<ShareIcon />}
+                    onClick={shareInviteLink}
+                  >
+                    שיתוף לינק
+                  </Button>
                   <Button
                     variant="outlined"
                     size="small"
@@ -137,7 +166,15 @@ export default function CommanderOnboardingPage() {
                   >
                     העתק לינק הזמנה
                   </Button>
-                </Box>
+                  <Button
+                    variant="text"
+                    size="small"
+                    startIcon={<LaunchIcon />}
+                    href={ROUTES.LANDING}
+                  >
+                    מעבר למערכת
+                  </Button>
+                </Stack>
               </Stack>
             </Alert>
           )}
