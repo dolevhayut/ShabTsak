@@ -9,6 +9,9 @@ import {
   Stack,
   Typography,
   Avatar,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import { motion, useAnimation, useInView } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -23,6 +26,9 @@ import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
 import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { AnimatedWords } from "components/general_comps/AnimatedWords";
 import { delayedVariant, riseWithFade } from "@/utils/motionVariants";
 import ROUTES from "@/constants/routeConstants";
@@ -150,6 +156,21 @@ const CORE_FEATURES = [
   { Icon: SmartToyOutlinedIcon,      label: "עוזר AI למפקד" },
   { Icon: EventBusyOutlinedIcon,     label: "ניהול אילוצים" },
   { Icon: GroupsOutlinedIcon,        label: "ניהול סד״כ" },
+];
+
+const COMPARISON_DATA = [
+  { feature: "שיבוץ משמרות", shabtsak: "אוטומטי, מהיר והוגן", oldWay: "ידני, איטי ומייגע" },
+  { feature: "איסוף אילוצים", shabtsak: "השומרים מזינים באפליקציה", oldWay: "הודעות בוואטסאפ שהולכות לאיבוד" },
+  { feature: "שקיפות והוגנות", shabtsak: "דוחות וסטטיסטיקות בזמן אמת", oldWay: "תחושת קיפוח וויכוחים" },
+  { feature: "עדכונים ושינויים", shabtsak: "מסונכרן מיידית לכולם בנייד", oldWay: "שליחת קבצי אקסל מעודכנים שוב ושוב" },
+  { feature: "תזכורות למשמרת", shabtsak: "אוטומטיות", oldWay: "אין" },
+];
+
+const FAQ_DATA = [
+  { q: "האם המערכת עולה כסף?", a: "לא. המערכת נבנתה מתוך שליחות ורצון לעזור, והיא מוצעת כרגע בחינם לכיתות כוננות ויישובים." },
+  { q: "איך עובד השיבוץ האוטומטי?", a: "האלגוריתם שלנו לוקח את כל האילוצים שהזינו השומרים, בודק את דרישות העמדות (מינימום שומרים), ומייצר את הלוח ההוגן והיעיל ביותר." },
+  { q: "האם צריך להוריד אפליקציה מהחנות?", a: "אין צורך! שבצ״קון היא אפליקציית רשת (Web App) שמותאמת בצורה מושלמת לנייד. פשוט נכנסים לקישור מהטלפון ושומרים למסך הבית." },
+  { q: "מה קורה אם מישהו חולה ברגע האחרון?", a: "המפקד יכול לשנות את השיבוץ ידנית בכל רגע, והמערכת תעדכן את השומרים הרלוונטיים באופן מיידי." },
 ];
 
 // ── main component ─────────────────────────────────────────────────────────────
@@ -581,11 +602,95 @@ export default function LandingPage() {
       {/* stripe */}
       <Box sx={{ height: 2, background: STRIPE }} />
 
-      {/* ═══════════════════════ TESTIMONIALS ══════════════════════════════ */}
+      {/* ═══════════════════════ COMPARISON ══════════════════════════════ */}
       <Box
         component="section"
         sx={{
           background: DARK_MID,
+          py: { xs: 10, md: 16 },
+          position: "relative",
+        }}
+      >
+        <Container maxWidth="md">
+          <FadeUp delay={100}>
+            <Box sx={{ textAlign: "center", mb: { xs: 6, md: 8 } }}>
+              <Typography
+                sx={{
+                  fontSize: "0.85rem",
+                  fontWeight: 800,
+                  color: GOLD_LIGHT,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  mb: 2,
+                }}
+              >
+                למה לעבור אלינו?
+              </Typography>
+              <Typography
+                variant="h2"
+                fontWeight={800}
+                sx={{
+                  fontSize: { xs: "2rem", md: "3rem" },
+                  color: CREAM,
+                  letterSpacing: "-1px",
+                }}
+              >
+                שבצ״קון מול השיטה הישנה
+              </Typography>
+            </Box>
+          </FadeUp>
+
+          <FadeUp delay={200}>
+            <Box
+              sx={{
+                borderRadius: "24px",
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.02)",
+                overflow: "hidden",
+              }}
+            >
+              {/* Header Row */}
+              <Grid container sx={{ borderBottom: "1px solid rgba(255,255,255,0.1)", bgcolor: "rgba(255,255,255,0.04)" }}>
+                <Grid item xs={4} sx={{ p: { xs: 2, md: 3 }, display: "flex", alignItems: "center" }}>
+                  <Typography sx={{ fontWeight: 700, color: "#A1A1AA", fontSize: { xs: "0.9rem", md: "1.1rem" } }}>יכולת</Typography>
+                </Grid>
+                <Grid item xs={4} sx={{ p: { xs: 2, md: 3 }, bgcolor: "rgba(200,169,74,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Typography sx={{ fontWeight: 800, color: GOLD_LIGHT, fontSize: { xs: "1rem", md: "1.2rem" } }}>שבצ״קון</Typography>
+                </Grid>
+                <Grid item xs={4} sx={{ p: { xs: 2, md: 3 }, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Typography sx={{ fontWeight: 700, color: "#A1A1AA", fontSize: { xs: "0.9rem", md: "1.1rem" } }}>אקסל + וואטסאפ</Typography>
+                </Grid>
+              </Grid>
+
+              {/* Data Rows */}
+              {COMPARISON_DATA.map((row, i) => (
+                <Grid container key={i} sx={{ borderBottom: i === COMPARISON_DATA.length - 1 ? "none" : "1px solid rgba(255,255,255,0.05)" }}>
+                  <Grid item xs={4} sx={{ p: { xs: 2, md: 3 }, display: "flex", alignItems: "center" }}>
+                    <Typography sx={{ color: CREAM, fontWeight: 600, fontSize: { xs: "0.85rem", md: "1rem" } }}>{row.feature}</Typography>
+                  </Grid>
+                  <Grid item xs={4} sx={{ p: { xs: 2, md: 3 }, bgcolor: "rgba(200,169,74,0.05)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 1 }}>
+                    <CheckCircleIcon sx={{ color: GOLD_LIGHT, fontSize: 20 }} />
+                    <Typography sx={{ color: CREAM, fontSize: { xs: "0.8rem", md: "0.95rem" } }}>{row.shabtsak}</Typography>
+                  </Grid>
+                  <Grid item xs={4} sx={{ p: { xs: 2, md: 3 }, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 1 }}>
+                    <CancelIcon sx={{ color: "#71717A", fontSize: 20 }} />
+                    <Typography sx={{ color: "#71717A", fontSize: { xs: "0.8rem", md: "0.95rem" } }}>{row.oldWay}</Typography>
+                  </Grid>
+                </Grid>
+              ))}
+            </Box>
+          </FadeUp>
+        </Container>
+      </Box>
+
+      {/* stripe */}
+      <Box sx={{ height: 2, background: STRIPE }} />
+
+      {/* ═══════════════════════ TESTIMONIALS ══════════════════════════════ */}
+      <Box
+        component="section"
+        sx={{
+          background: DARK,
           py: { xs: 10, md: 16 },
           position: "relative",
         }}
@@ -662,6 +767,72 @@ export default function LandingPage() {
               </Grid>
             ))}
           </Grid>
+        </Container>
+      </Box>
+
+      {/* stripe */}
+      <Box sx={{ height: 2, background: STRIPE }} />
+
+      {/* ═══════════════════════ FAQ ══════════════════════════════ */}
+      <Box
+        component="section"
+        sx={{
+          background: DARK_MID,
+          py: { xs: 10, md: 16 },
+          position: "relative",
+        }}
+      >
+        <Container maxWidth="md">
+          <FadeUp delay={100}>
+            <Box sx={{ textAlign: "center", mb: { xs: 6, md: 8 } }}>
+              <Typography
+                variant="h2"
+                fontWeight={800}
+                sx={{
+                  fontSize: { xs: "2rem", md: "3rem" },
+                  color: CREAM,
+                  letterSpacing: "-1px",
+                }}
+              >
+                שאלות ותשובות
+              </Typography>
+            </Box>
+          </FadeUp>
+
+          <FadeUp delay={200}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {FAQ_DATA.map((faq, i) => (
+                <Accordion
+                  key={i}
+                  disableGutters
+                  sx={{
+                    bgcolor: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "16px !important",
+                    "&:before": { display: "none" },
+                    "&.Mui-expanded": {
+                      bgcolor: "rgba(255,255,255,0.06)",
+                      borderColor: "rgba(200,169,74,0.3)",
+                    }
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon sx={{ color: GOLD_LIGHT }} />}
+                    sx={{ p: { xs: 2, md: 3 } }}
+                  >
+                    <Typography sx={{ color: CREAM, fontWeight: 700, fontSize: { xs: "1rem", md: "1.15rem" } }}>
+                      {faq.q}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ p: { xs: 2, md: 3 }, pt: 0 }}>
+                    <Typography sx={{ color: "#A1A1AA", fontSize: { xs: "0.95rem", md: "1.05rem" }, lineHeight: 1.7 }}>
+                      {faq.a}
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+            </Box>
+          </FadeUp>
         </Container>
       </Box>
 
