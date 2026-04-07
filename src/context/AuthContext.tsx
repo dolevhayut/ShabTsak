@@ -6,7 +6,7 @@ type AuthContextType = {
     // eslint-disable-next-line no-unused-vars
     login: (_payload: { id: string; phone: string }) => Promise<void>;
     // eslint-disable-next-line no-unused-vars
-    register: (_payload: { name: string; id: string; phone: string }) => Promise<void>;
+    register: (_payload: { name: string; id: string; phone: string; campCode: string }) => Promise<void>;
     logout: () => void;
     init: () => void;
 }
@@ -52,7 +52,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         refreshTokenTimeout.current = setTimeout(_refreshToken, refreshTokenInterval);
     }
 
-    async function register(payload: { name: string; id: string; phone: string }) {
+    async function register(payload: { name: string; id: string; phone: string; campCode: string }) {
         const userInfo = await UserService.register(payload);
         setUser(userInfo);
         clearTimeout(refreshTokenTimeout.current);

@@ -3,10 +3,11 @@ import { Container, CssBaseline, Paper, Table, TableBody, TableCell, TableContai
 import CampItem from "./campItem/campItem";
 
 CampList.propTypes = {
-    camps: PropTypes.array
+    camps: PropTypes.array,
+    showRegistrationCode: PropTypes.bool,
 }
 
-function CampList({ camps = [] }) {
+function CampList({ camps = [], showRegistrationCode = false }) {
     return (
         <>
             <CssBaseline />
@@ -17,6 +18,9 @@ function CampList({ camps = [] }) {
                             <TableRow>
                                 <TableCell align="center">#</TableCell>
                                 <TableCell align="center">שם</TableCell>
+                                {showRegistrationCode && (
+                                    <TableCell align="center">קוד הרשמה לחיילים</TableCell>
+                                )}
                                 <TableCell align="center">רשימת עמדות</TableCell>
                                 <TableCell align="center">רשימת חיילים</TableCell>
                                 <TableCell align="center">פעולות</TableCell>
@@ -26,7 +30,7 @@ function CampList({ camps = [] }) {
                         <TableBody>
                             {camps.map((item, i) => {
                                 return (
-                                    <CampItem key={item.id} index={i} item={item} />
+                                    <CampItem key={item.id} index={i} item={item} showRegistrationCode={showRegistrationCode} />
                                 )
                             })}
                         </TableBody>

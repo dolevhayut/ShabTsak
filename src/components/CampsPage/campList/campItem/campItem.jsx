@@ -7,9 +7,10 @@ import CampItemActions from "./campItemActions/campItemActions";
 CampItem.propTypes = {
   index: PropTypes.number.isRequired,
   item: PropTypes.object.isRequired,
+  showRegistrationCode: PropTypes.bool,
 };
 
-function CampItem({ item, index }) {
+function CampItem({ item, index, showRegistrationCode = false }) {
   const nav = useNavigate();
   return (
     <TableRow
@@ -31,6 +32,20 @@ function CampItem({ item, index }) {
       >
         {item.name}
       </TableCell>
+
+      {showRegistrationCode && (
+        <TableCell
+          align="center"
+          sx={{
+            fontFamily: "ui-monospace, monospace",
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            fontSize: "0.875rem",
+          }}
+        >
+          {item.registration_code ?? "—"}
+        </TableCell>
+      )}
 
       <TableCell align="center">
         <Button

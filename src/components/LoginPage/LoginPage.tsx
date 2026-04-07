@@ -29,6 +29,9 @@ export default function LoginPage() {
                     <Typography variant="h1">ברוכים הבאים לשבצ׳׳קון!</Typography>
                     <Typography variant="body2">כדי לצפות במשמרות ולבצע שינויים<br />יש להתחבר</Typography>
                     <LoginButton />
+                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320 }}>
+                        הרשמה לראשונה: קבלו מהמפקד את קוד הבסיס והזינו אותו בעמוד ההרשמה יחד עם תעודת הזהות והטלפון.
+                    </Typography>
                     <Typography variant="body2" sx={{ mt: 1 }}>
                         עדיין לא רשומים?{" "}
                         <Link

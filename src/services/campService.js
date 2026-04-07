@@ -2,11 +2,12 @@ import { toast } from "@/services/notificationService";
 import { supabase } from "./supabaseClient";
 import { getCredentials } from "./authCredentials";
 
-export async function getCamps() {
+export async function getCamps(includeRegistrationCode = false) {
     try {
+        const columns = includeRegistrationCode ? "*" : "id, name, created_at";
         const { data, error } = await supabase
             .from("camps")
-            .select("*")
+            .select(columns)
             .order("id");
         if (error) throw error;
         return data;
@@ -31,6 +32,7 @@ export async function createOrUpdateCamp(bodyFormData, method, prevItemForUpdate
                 ...creds,
                 p_camp_id: bodyFormData.id,
                 p_name: bodyFormData.name,
+                p_registration_code: bodyFormData.registration_code?.trim() || null,
             });
             if (error) throw error;
             toast.success(`בסיס ${prevItemForUpdate.name} התעדכן בהצלחה`);

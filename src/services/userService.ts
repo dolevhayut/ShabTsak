@@ -71,40 +71,49 @@ type RegisterPayload = {
     name: string;
     id: string;
     phone: string;
+    campCode: string;
 };
+
+function mapRegisterRpcError(message: string | undefined): string {
+    const m = message || "";
+    if (m.includes("REGISTER_INVALID_CAMP_CODE")) return "קוד בסיס שגוי. בדקו עם המפקד והזינו שוב.";
+    if (m.includes("REGISTER_MISSING_CAMP_CODE") || m.includes("REGISTER_MISSING_FIELDS")) {
+        return "יש למלא את כל השדות, כולל קוד הבסיס";
+    }
+    if (m.includes("REGISTER_USER_EXISTS")) return "חייל עם תעודת זהות זו כבר קיים במערכת";
+    if (m.includes("duplicate key") || m.includes("unique")) return "פרטים אלה כבר רשומים במערכת";
+    return m || "ההרשמה נכשלה";
+}
 
 async function register(payload: RegisterPayload) {
     const name = payload.name.trim();
     const id = payload.id.trim();
     const phone = payload.phone.trim();
+    const campCode = payload.campCode.trim();
 
-    const { data: existing } = await supabase
-        .from("users")
-        .select("id")
-        .eq("id", id)
-        .maybeSingle();
-
-    if (existing) {
-        throw new Error("חייל עם תעודת זהות זו כבר קיים במערכת");
-    }
-
-    const { data, error } = await supabase
-        .from("users")
-        .insert({ id, phone, name })
-        .select("id, phone, name, email, picture, role")
-        .single();
+    const { data, error } = await supabase.rpc("rpc_register_with_camp_code", {
+        p_name: name,
+        p_id: id,
+        p_phone: phone,
+        p_camp_code: campCode,
+    });
 
     if (error) {
-        throw new Error(error.message || "ההרשמה נכשלה");
+        throw new Error(mapRegisterRpcError(error.message));
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+        throw new Error("ההרשמה נכשלה");
     }
 
     const userInfo: UserInfo = {
-        id: String(data.id),
-        phone: String(data.phone),
-        name: data.name || "חייל",
-        email: data.email || null,
-        picture: data.picture || null,
-        role: data.role || "member",
+        id: String(row.id),
+        phone: String(row.phone),
+        name: row.name || "חייל",
+        email: row.email || null,
+        picture: row.picture || null,
+        role: row.role || "member",
     };
 
     const token: TokenType = {

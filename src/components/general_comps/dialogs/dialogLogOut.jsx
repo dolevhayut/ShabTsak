@@ -16,8 +16,8 @@ function DialogLogOut({ openDialog,setOpenDialog,onAction})  {
                     אתה בטוח רוצה להתנתק ?
                 </DialogTitle>
                 <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)}>לא מסכים</Button>
-                    <Button onClick={onAction} autoFocus>מסכים</Button>
+                    <Button onClick={() => setOpenDialog(false)}>ביטול</Button>
+                    <Button onClick={onAction} autoFocus>אישור</Button>
                 </DialogActions>
 
             </Dialog>

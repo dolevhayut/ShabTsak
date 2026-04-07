@@ -63,8 +63,8 @@ function DialogDelete({ openDialog, setOpenDialog, subject, item }) {
                     {`אתה בטוח רוצה למחוק ${subjectHebrew} ${subject === 'shift' ? getDayOfWeekHebrew(item.dayId) : item.name}?`}
                 </DialogTitle>
                 <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)}>לא מסכים</Button>
-                    <Button onClick={doApiDelete} autoFocus>מסכים</Button>
+                    <Button onClick={() => setOpenDialog(false)}>ביטול</Button>
+                    <Button onClick={doApiDelete} autoFocus>אישור</Button>
                 </DialogActions>
             </Dialog>
         </>

@@ -28,8 +28,18 @@ import {
   Checkbox,
   ListItemText,
   Tooltip,
+  Stack,
+  Divider,
+  IconButton,
+  CircularProgress,
+  Avatar,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
+import { getShibutsEvents, addShibutsEvent, deleteShibutsEvent } from "@/services/shibutsEventService";
+import { getGuardLinkByUserId } from "@/services/userGuardLinkService";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -89,6 +99,13 @@ function ShiftSchedule() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedOutpostIds, setSelectedOutpostIds] = useState(null);
   const [currentView, setCurrentView] = useState("day");
+
+  // ── אירועים / דיווחים ─────────────────────────────────────────────────────
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [newEventContent, setNewEventContent] = useState("");
+  const [eventSubmitting, setEventSubmitting] = useState(false);
+  const [currentUserGuardId, setCurrentUserGuardId] = useState(null);
 
   const fallbackColors = useMemo(() => {
     return ["#4B6B2A", "#16A34A", "#DC2626", "#D97706", "#7C3AED", "#0891B2", "#BE185D", "#4F46E5"];
@@ -162,6 +179,27 @@ function ShiftSchedule() {
       fetchShibutsim();
     }
   }, [campId, shifts, guards]);
+
+  // שליפת guardId של המשתמש הנוכחי
+  useEffect(() => {
+    if (!user?.id || !campId) return;
+    getGuardLinkByUserId(user.id, campId).then((link) => {
+      setCurrentUserGuardId(link?.guardId ?? null);
+    });
+  }, [user?.id, campId]);
+
+  // שליפת דיווחים כשהפופאפ נפתח לשיבוץ קיים
+  useEffect(() => {
+    if (isPopupOpen && isEdit && tempShibuts?.shibutsId) {
+      setEventsLoading(true);
+      getShibutsEvents(tempShibuts.shibutsId)
+        .then((data) => setEvents(data || []))
+        .finally(() => setEventsLoading(false));
+    } else {
+      setEvents([]);
+      setNewEventContent("");
+    }
+  }, [isPopupOpen, isEdit, tempShibuts?.shibutsId]);
 
   async function fetchShibutsim() {
     let shibutsimData = await getShibutsimOfCurrentMonthByCampId(campId, null);
@@ -333,6 +371,35 @@ function ShiftSchedule() {
     },
     [shibutsim, outposts]
   );
+
+  const submitEvent = useCallback(async () => {
+    if (!newEventContent.trim() || !tempShibuts?.shibutsId) return;
+    setEventSubmitting(true);
+    try {
+      const ev = await addShibutsEvent({
+        shibutsId: tempShibuts.shibutsId,
+        campId,
+        authorUserId: user?.id,
+        authorGuardId: currentUserGuardId,
+        content: newEventContent.trim(),
+      });
+      setEvents((prev) => [...prev, ev]);
+      setNewEventContent("");
+    } catch {
+      // toasted inside service
+    } finally {
+      setEventSubmitting(false);
+    }
+  }, [newEventContent, tempShibuts?.shibutsId, campId, user?.id, currentUserGuardId]);
+
+  const deleteEvent = useCallback(async (eventId) => {
+    try {
+      await deleteShibutsEvent(eventId);
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    } catch {
+      // toasted inside service
+    }
+  }, []);
 
   const onClose = useCallback(() => {
     setPopupOpen(false);
@@ -926,6 +993,114 @@ function ShiftSchedule() {
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   ניתן לצפות בפרטי המשמרת בלבד. לשינויים, פנה למפקד.
                 </Typography>
+              )}
+
+              {/* ── דיווחי אירועים ── */}
+              {isEdit && tempShibuts?.shibutsId && (
+                <>
+                  <Divider sx={{ mt: 2.5, mb: 1.5 }} />
+                  <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1.25 }}>
+                    <EventNoteOutlinedIcon sx={{ fontSize: 17, color: "text.secondary" }} />
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      דיווחי אירועים
+                    </Typography>
+                    {events.length > 0 && (
+                      <Typography variant="caption" color="text.disabled">
+                        ({events.length})
+                      </Typography>
+                    )}
+                  </Stack>
+
+                  {/* רשימת דיווחים */}
+                  {eventsLoading ? (
+                    <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+                      <CircularProgress size={22} />
+                    </Box>
+                  ) : events.length === 0 ? (
+                    <Typography variant="body2" color="text.disabled" sx={{ mb: 1.5, textAlign: "center", py: 1 }}>
+                      אין דיווחים עדיין
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1} sx={{ maxHeight: 220, overflowY: "auto", mb: 1.5, pr: 0.5 }}>
+                      {events.map((ev) => {
+                        const guard = guards?.find((g) => g.value === ev.authorGuardId);
+                        const authorName = guard?.text ?? (ev.authorGuardId ? `שומר #${ev.authorGuardId}` : "מפקד");
+                        const initials = authorName.charAt(0);
+                        const canDelete = isCommander || ev.authorUserId === user?.id;
+                        return (
+                          <Box
+                            key={ev.id}
+                            sx={{
+                              bgcolor: "action.hover",
+                              borderRadius: "8px",
+                              px: 1.5,
+                              py: 1,
+                              border: "1px solid",
+                              borderColor: "divider",
+                            }}
+                          >
+                            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                              <Stack direction="row" alignItems="center" gap={0.75}>
+                                <Avatar sx={{ width: 22, height: 22, fontSize: "0.65rem", bgcolor: "primary.main" }}>
+                                  {initials}
+                                </Avatar>
+                                <Typography variant="caption" fontWeight={700}>
+                                  {authorName}
+                                </Typography>
+                                <Typography variant="caption" color="text.disabled">
+                                  {format(new Date(ev.createdAt), "dd/MM HH:mm")}
+                                </Typography>
+                              </Stack>
+                              {canDelete && (
+                                <IconButton
+                                  size="small"
+                                  onClick={() => deleteEvent(ev.id)}
+                                  sx={{ p: 0.25, color: "text.disabled", "&:hover": { color: "error.main" } }}
+                                >
+                                  <DeleteOutlineIcon sx={{ fontSize: 15 }} />
+                                </IconButton>
+                              )}
+                            </Stack>
+                            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                              {ev.content}
+                            </Typography>
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  )}
+
+                  {/* שדה כתיבה */}
+                  <Stack direction="row" gap={1} alignItems="flex-end">
+                    <TextField
+                      fullWidth
+                      size="small"
+                      multiline
+                      maxRows={3}
+                      placeholder="כתוב דיווח או הערה..."
+                      value={newEventContent}
+                      onChange={(e) => setNewEventContent(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          submitEvent();
+                        }
+                      }}
+                    />
+                    <IconButton
+                      color="primary"
+                      disabled={!newEventContent.trim() || eventSubmitting}
+                      onClick={submitEvent}
+                      sx={{ mb: 0.25 }}
+                    >
+                      {eventSubmitting ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        <SendOutlinedIcon />
+                      )}
+                    </IconButton>
+                  </Stack>
+                </>
               )}
             </DialogContent>
             <DialogActions>

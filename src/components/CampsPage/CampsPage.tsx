@@ -13,8 +13,8 @@ const CampsPage = () => {
   const isCommander = useIsCommander();
 
   const { isLoading, data: camps } = useQuery({
-    queryFn: getCamps,
-    queryKey: ["camps"],
+    queryFn: () => getCamps(isCommander),
+    queryKey: ["camps", isCommander],
   });
 
   return (
@@ -33,7 +33,7 @@ const CampsPage = () => {
             אין בסיסים עדיין
           </Typography>
         ) : (
-          <CampList camps={(camps || []) as never[]} />
+          <CampList camps={(camps || []) as never[]} showRegistrationCode={isCommander} />
         )}
 
         {isCommander && <CampDialog openDialog={openDialog} setOpenDialog={setOpenDialog} method="POST" />}

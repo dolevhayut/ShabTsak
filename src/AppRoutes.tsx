@@ -22,6 +22,8 @@ const MyShiftsPage = React.lazy(() => import("components/MyShiftsPage/MyShiftsPa
 const ShiftRequestsPage = React.lazy(() => import("components/ShiftRequestsPage/ShiftRequestsPage") as any);
 const CommanderAiPage = React.lazy(() => import("components/CommanderAiPage/CommanderAiPage") as any);
 const AnalyticsPage = React.lazy(() => import("components/AnalyticsPage/AnalyticsPage") as any);
+const SoldierHomePage = React.lazy(() => import("components/SoldierHomePage/SoldierHomePage") as any);
+const SystemMessagesPage = React.lazy(() => import("components/SystemMessagesPage/SystemMessagesPage") as any);
 import { useAuthContext } from "@/context/AuthContext";
 import { Box, CircularProgress } from "@mui/material";
 
@@ -31,19 +33,21 @@ export default function AppRoutes() {
             <Routes>
                 <Route path={ROUTES.HOME} element={<Suspense><Layout/></Suspense>}>
                     <Route path={ROUTES.HOME} element={<PrivateRoute/>}>
-                        <Route index element={<CampsPage/>}/>
+                        <Route index element={<SmartIndexRedirect/>}/>
+                        <Route path={ROUTES.SOLDIER_HOME} element={<SoldierHomePage/>}/>
                         <Route path={ROUTES.SCHEDULE} element={<ShiftSchedule/>}/>
                         <Route path={ROUTES.MY_SHIFTS} element={<MyShiftsPage/>}/>
                         <Route path={`${ROUTES.OUTPOSTS}${ROUTES.CAMP}/:id/:name?`} element={<OutpostsPage/>}/>
                         <Route path={`${ROUTES.SHIFTS}${ROUTES.OUTPOST}/:id/:name?`} element={<ShiftsPage/>}/>
-                        <Route path={ROUTES.GUARD_PROFILE} element={<GuardProfile/>}/>
-                        <Route path={ROUTES.GUARDS} element={<GuardsPage/>}/>
                         {/* אנליטיקס — קריאה בלבד, נגיש לכל משתמש מאומת
                             תוכן רגיש מוסתר ב-UI עם useIsCommander() */}
                         <Route path={ROUTES.ANALYTICS} element={<AnalyticsPage/>}/>
                         <Route element={<CommanderRoute/>}>
+                            <Route path={ROUTES.GUARDS} element={<GuardsPage/>}/>
+                            <Route path={ROUTES.GUARD_PROFILE} element={<GuardProfile/>}/>
                             <Route path={ROUTES.SHIFT_REQUESTS} element={<ShiftRequestsPage/>}/>
                             <Route path={ROUTES.COMMANDER_AI} element={<CommanderAiPage/>}/>
+                            <Route path={ROUTES.SYSTEM_MESSAGES} element={<SystemMessagesPage/>}/>
                         </Route>
                     </Route>
                     <Route element={<Suspense><Outlet /></Suspense>}>
@@ -59,6 +63,19 @@ export default function AppRoutes() {
             <ToastContainer position="bottom-right" theme="colored" rtl/>
         </Router>
     );
+}
+
+function SmartIndexRedirect() {
+    const { user } = useAuthContext();
+    if (user === undefined) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
+                <CircularProgress aria-label="טוען" />
+            </Box>
+        );
+    }
+    if (user?.role === "commander") return <Suspense><CampsPage /></Suspense>;
+    return <Navigate to={ROUTES.SOLDIER_HOME} replace />;
 }
 
 function PrivateRoute() {

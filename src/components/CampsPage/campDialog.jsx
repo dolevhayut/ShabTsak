@@ -20,8 +20,11 @@ function CampDialog({ openDialog, setOpenDialog, method, item }) {
 
     const { register, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {
-            name: method === "PUT" ? item.name : "",
-            ...(method === "PUT" && { id: item.id })
+            name: method === "PUT" ? item?.name : "",
+            ...(method === "PUT" && item && {
+                id: item.id,
+                registration_code: item.registration_code || "",
+            }),
         }
     });
 
@@ -32,8 +35,10 @@ function CampDialog({ openDialog, setOpenDialog, method, item }) {
     }, [method]);
 
 
-    const onSubForm = async(formData) => {
-        await createOrUpdateCamp(formData, method,item);
+    const onSubForm = async (formData) => {
+        const payload =
+            method === "PUT" && item ? { ...formData, id: item.id } : formData;
+        await createOrUpdateCamp(payload, method, item);
         //  clear the shifts query 
         queryClient.invalidateQueries(['camps'])
         setOpenDialog(false);
@@ -65,7 +70,25 @@ function CampDialog({ openDialog, setOpenDialog, method, item }) {
                         <FormHelperText error={!!errors.name}>
                             {errors.name && errors?.name?.message}
                         </FormHelperText>
-                        {/* Add more TextFields and form fields here as needed */}
+                        {method === "PUT" && (
+                            <TextField
+                                {...register("registration_code", {
+                                    required: { value: true, message: "חובה לשמור קוד הרשמה לחיילים" },
+                                    minLength: { value: 4, message: "קוד קצר מדי" },
+                                    maxLength: { value: 32, message: "קוד ארוך מדי" },
+                                })}
+                                variant="outlined"
+                                fullWidth
+                                autoComplete="off"
+                                label="קוד הרשמה לחיילים"
+                                sx={{ mt: 2 }}
+                                error={!!errors.registration_code}
+                                helperText={
+                                    errors.registration_code?.message ||
+                                    "החיילים מזינים קוד זה בעמוד ההרשמה. אפשר לשנות ולשתף מחדש."
+                                }
+                            />
+                        )}
                     </DialogContent>
                     <DialogActions>
                         <Button type="button"

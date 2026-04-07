@@ -137,6 +137,33 @@ export async function getShibutsimByGuardAndCamp(guardId, campId, dateRange) {
     }
 }
 
+export async function getNextShibutsForGuard(guardId) {
+    try {
+        const nowTs = new Date().setHours(0, 0, 0, 0); // start of today
+
+        const { data: shibutsRow, error } = await supabase
+            .from("shibuts")
+            .select("*")
+            .eq("guardId", guardId)
+            .gte("theDate", nowTs)
+            .order("theDate", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+        if (error) throw error;
+        if (!shibutsRow) return null;
+
+        const [{ data: shiftRow }, { data: outpostRow }] = await Promise.all([
+            supabase.from("shifts").select("id, name, startHour, endHour").eq("id", shibutsRow.shiftId).maybeSingle(),
+            supabase.from("outposts").select("id, name").eq("id", shibutsRow.outpostId).maybeSingle(),
+        ]);
+
+        return { ...shibutsRow, shifts: shiftRow, outposts: outpostRow };
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
 export async function getShibutsById(shibutsId) {
     try {
         const { data, error } = await supabase

@@ -12,20 +12,26 @@ export default function RegisterPage() {
     const [name, setName] = useState("");
     const [id, setId] = useState("");
     const [phone, setPhone] = useState("");
+    const [campCode, setCampCode] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
     if (user === undefined) return null;
     if (user) return <Navigate to={ROUTES.HOME} />;
 
     const handleRegister = async () => {
-        if (!name.trim() || !id.trim() || !phone.trim()) {
-            toast.error("יש למלא את כל השדות");
+        if (!name.trim() || !id.trim() || !phone.trim() || !campCode.trim()) {
+            toast.error("יש למלא את כל השדות, כולל קוד הבסיס שקיבלתם מהמפקד");
             return;
         }
 
         try {
             setIsLoading(true);
-            await register({ name: name.trim(), id: id.trim(), phone: phone.trim() });
+            await register({
+                name: name.trim(),
+                id: id.trim(),
+                phone: phone.trim(),
+                campCode: campCode.trim(),
+            });
             toast.success("ההרשמה הצליחה! ברוכים הבאים");
         } catch (err: any) {
             toast.error(err?.message || "ההרשמה נכשלה");
@@ -50,10 +56,21 @@ export default function RegisterPage() {
                 >
                     <Typography variant="h1">הרשמה למערכת</Typography>
                     <Typography variant="body2">
-                        הזינו את הפרטים שלכם כדי להירשם
+                        הזינו את קוד הבסיס שקיבלתם מהמפקד, ואת פרטיכם האישיים
                     </Typography>
 
                     <Box sx={{ width: "100%", display: "grid", gap: 1.5 }}>
+                        <TextField
+                            fullWidth
+                            label="קוד בסיס (מהמפקד)"
+                            value={campCode}
+                            onChange={(e) => setCampCode(e.target.value)}
+                            autoComplete="off"
+                            inputProps={{
+                                style: { fontFamily: "ui-monospace, monospace", letterSpacing: "0.08em" },
+                            }}
+                            helperText="אותיות ומספרים — ללא רווחים מיותרים"
+                        />
                         <TextField
                             fullWidth
                             label="שם מלא"

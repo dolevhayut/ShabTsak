@@ -19,6 +19,7 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "@/theme/theme";
 import Logo from "components/general_comps/Logo.jsx";
@@ -33,16 +34,19 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useQueryClient } from "react-query";
 
 const getNavLinks = (user) => {
+  const isCommander = user?.role === "commander";
+
   const links = [
-    { label: "בסיסים", to: ROUTES.HOME, Icon: ApartmentIcon },
     { label: "שיבוץ משמרות", to: ROUTES.SCHEDULE, Icon: CalendarMonthIcon },
     { label: "המשמרות שלי", to: ROUTES.MY_SHIFTS, Icon: EventAvailableIcon },
-    { label: 'סד"כ', to: ROUTES.GUARDS, Icon: GroupsIcon },
     { label: "אנליטיקס", to: ROUTES.ANALYTICS, Icon: AnalyticsIcon },
   ];
 
-  if (user?.role === "commander") {
+  if (isCommander) {
+    links.unshift({ label: "בסיסים", to: ROUTES.HOME, Icon: ApartmentIcon });
+    links.push({ label: 'סד"כ', to: ROUTES.GUARDS, Icon: GroupsIcon });
     links.push({ label: "בקשות משמרת", to: ROUTES.SHIFT_REQUESTS, Icon: MarkEmailUnreadIcon });
+    links.push({ label: "הודעות מערכת", to: ROUTES.SYSTEM_MESSAGES, Icon: CampaignOutlinedIcon });
     links.push({ label: "עוזר מפקד AI", to: ROUTES.COMMANDER_AI, Icon: SmartToyIcon });
   }
 
