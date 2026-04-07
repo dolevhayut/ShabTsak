@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box, Button, Container, TextField, Typography } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useSearchParams } from "react-router-dom";
 import { toast } from "@/services/notificationService";
 import ROUTES from "@/constants/routeConstants";
 import { theme } from "@/theme/theme";
@@ -9,10 +9,12 @@ import { useAuthContext } from "@/context/AuthContext";
 
 export default function RegisterPage() {
     const { user, register } = useAuthContext();
+    const [searchParams] = useSearchParams();
+    const initialCampCode = (searchParams.get("campCode") || "").trim();
     const [name, setName] = useState("");
     const [id, setId] = useState("");
     const [phone, setPhone] = useState("");
-    const [campCode, setCampCode] = useState("");
+    const [campCode, setCampCode] = useState(initialCampCode);
     const [isLoading, setIsLoading] = useState(false);
 
     if (user === undefined) return null;
@@ -69,7 +71,7 @@ export default function RegisterPage() {
                             inputProps={{
                                 style: { fontFamily: "ui-monospace, monospace", letterSpacing: "0.08em" },
                             }}
-                            helperText="אותיות ומספרים — ללא רווחים מיותרים"
+                            helperText={initialCampCode ? "הקוד הוזן אוטומטית מהלינק" : "אותיות ומספרים — ללא רווחים מיותרים"}
                         />
                         <TextField
                             fullWidth

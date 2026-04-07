@@ -6,6 +6,7 @@ const ROUTES = {
   ANALYTICS: "/analytics",
   SHIFT_REQUESTS: "/shift-requests",
   COMMANDER_AI: "/commander-ai",
+  COMMANDER_ONBOARDING: "/commander-onboarding",
   SYSTEM_MESSAGES: "/system-messages",
   GUARDS: "/guards",
   GUARD_PROFILE: "/guards/:guardId",

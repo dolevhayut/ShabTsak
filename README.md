@@ -32,8 +32,7 @@ After running, visit `http://localhost:3000/` in your browser to view the app.
 ## Supabase Auth (ID + Phone)
 
 - Login now uses `id + phone` against Supabase table `users`.
-- Development defaults to local Supabase Docker (`http://127.0.0.1:54321` + local anon key).
-- Production should use Supabase Cloud values via `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- App uses Supabase Cloud values via `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`.
 
 Suggested table:
 

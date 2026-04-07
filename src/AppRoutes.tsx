@@ -21,6 +21,7 @@ const RegisterPage = React.lazy(() => import("components/RegisterPage/RegisterPa
 const MyShiftsPage = React.lazy(() => import("components/MyShiftsPage/MyShiftsPage") as any);
 const ShiftRequestsPage = React.lazy(() => import("components/ShiftRequestsPage/ShiftRequestsPage") as any);
 const CommanderAiPage = React.lazy(() => import("components/CommanderAiPage/CommanderAiPage") as any);
+const CommanderOnboardingPage = React.lazy(() => import("components/CommanderOnboardingPage/CommanderOnboardingPage") as any);
 const AnalyticsPage = React.lazy(() => import("components/AnalyticsPage/AnalyticsPage") as any);
 const SoldierHomePage = React.lazy(() => import("components/SoldierHomePage/SoldierHomePage") as any);
 const SystemMessagesPage = React.lazy(() => import("components/SystemMessagesPage/SystemMessagesPage") as any);
@@ -47,6 +48,7 @@ export default function AppRoutes() {
                             <Route path={ROUTES.GUARD_PROFILE} element={<GuardProfile/>}/>
                             <Route path={ROUTES.SHIFT_REQUESTS} element={<ShiftRequestsPage/>}/>
                             <Route path={ROUTES.COMMANDER_AI} element={<CommanderAiPage/>}/>
+                            <Route path={ROUTES.COMMANDER_ONBOARDING} element={<CommanderOnboardingPage/>}/>
                             <Route path={ROUTES.SYSTEM_MESSAGES} element={<SystemMessagesPage/>}/>
                         </Route>
                     </Route>

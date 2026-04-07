@@ -20,6 +20,7 @@ import AnalyticsIcon from "@mui/icons-material/Analytics";
 import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
+import AppRegistrationIcon from "@mui/icons-material/AppRegistration";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "@/theme/theme";
 import Logo from "components/general_comps/Logo.jsx";
@@ -48,6 +49,7 @@ const getNavLinks = (user) => {
     links.push({ label: "בקשות משמרת", to: ROUTES.SHIFT_REQUESTS, Icon: MarkEmailUnreadIcon });
     links.push({ label: "הודעות מערכת", to: ROUTES.SYSTEM_MESSAGES, Icon: CampaignOutlinedIcon });
     links.push({ label: "עוזר מפקד AI", to: ROUTES.COMMANDER_AI, Icon: SmartToyIcon });
+    links.push({ label: "הרשמה פנימית", to: ROUTES.COMMANDER_ONBOARDING, Icon: AppRegistrationIcon });
   }
 
   return links;
