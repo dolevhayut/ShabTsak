@@ -5,6 +5,7 @@ export const schema = yup
         name: yup.string().required("חובה למלא שם").min(2, "שם חייב להיות לפחות 2 אותיות").max(50, "שם עד 50 אותיות"),
         mail: yup.string().required("חובה למלא אי-מייל").matches(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/, "אי-מייל אינו תקין"),
         phone: yup.string().required("חובה למלא מספר טלפון").min(9, "מספר טלפון חייב להכיל לפחות 9 תווים").max(13, "מספר טלפון עד 13 תווים"),
+        personalId: yup.string().nullable().optional().max(20, "תעודת זהות עד 20 תווים"),
         color: yup.string().required("חובה לבחור צבע").matches(/^#([0-9a-fA-F]{6})$/, "צבע לא תקין"),
         shouldBeAllocated: yup.bool().default(false)
     })

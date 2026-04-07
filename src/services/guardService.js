@@ -60,6 +60,7 @@ export async function addNewGuard(newGuardDetails) {
             p_should_be_allocated: newGuardDetails.shouldBeAllocated ?? true,
             p_camp_id: newGuardDetails.campId,
             p_color: newGuardDetails.color || null,
+            p_personal_id: newGuardDetails.personalId || null,
         });
         if (error) throw error;
         return { data: { id: data }, status: 201 };
@@ -79,6 +80,7 @@ export async function updateGuard(guardDetails) {
             p_guard_phone: guardDetails.phone || null,
             p_should_be_allocated: guardDetails.shouldBeAllocated ?? true,
             p_color: guardDetails.color || null,
+            p_personal_id: guardDetails.personalId || null,
         });
         if (error) throw error;
         return { data: guardDetails, status: 200 };

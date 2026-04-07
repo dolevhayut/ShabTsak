@@ -78,6 +78,16 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
           <TextField margin="dense" label="טלפון" type="tel" fullWidth autoComplete="tel" {...register("phone")} helperText={<FormError error={formState.errors?.phone?.message} />} />
           <TextField
             margin="dense"
+            label='תעודת זהות (אופציונלי — לשיוך אוטומטי בהרשמה)'
+            type="text"
+            fullWidth
+            autoComplete="off"
+            inputProps={{ maxLength: 20, style: { fontFamily: "ui-monospace, monospace", letterSpacing: "0.04em" } }}
+            {...register("personalId")}
+            helperText={<FormError error={formState.errors?.personalId?.message} />}
+          />
+          <TextField
+            margin="dense"
             label="צבע חייל"
             type="color"
             fullWidth
