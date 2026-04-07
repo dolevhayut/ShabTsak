@@ -27,7 +27,9 @@ import {
   Typography,
   Checkbox,
   ListItemText,
+  Tooltip,
 } from "@mui/material";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -86,6 +88,7 @@ function ShiftSchedule() {
   const [shibutsim, setShibutsim] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedOutpostIds, setSelectedOutpostIds] = useState(null);
+  const [currentView, setCurrentView] = useState("day");
 
   const fallbackColors = useMemo(() => {
     return ["#4B6B2A", "#16A34A", "#DC2626", "#D97706", "#7C3AED", "#0891B2", "#BE185D", "#4F46E5"];
@@ -337,6 +340,33 @@ function ShiftSchedule() {
 
   const onShibutsClick = useCallback(
     (event) => {
+      // אירוע פנטום – פתיחת דיאלוג שיבוץ חדש
+      if (event.isPhantom) {
+        if (!isCommander) return;
+        const outpost = outposts.find((o) => o.id === event.outpostId);
+        setEdit(false);
+        setTempShibuts({
+          start: new Date(event.start),
+          end: new Date(event.end),
+          theDate: event.start.getTime(),
+          guardName: "",
+          guardId: "",
+          shiftId: event.shiftId,
+          outpostId: event.outpostId,
+          resource: event.outpostId,
+          campId,
+          color: "#ff0000",
+          title: "",
+        });
+        setDialogDetails({
+          shiftName: `${outpost?.name || ""} | ${format(new Date(event.start), "HH:mm")} - ${format(new Date(event.end), "HH:mm")}`,
+          guardName: "לא נבחר עדיין",
+          dateText: format(new Date(event.start), "dd/MM/yyyy"),
+        });
+        setPopupOpen(true);
+        return;
+      }
+
       const shibuts = {
         ...event,
         start: event.originalStart || event.start,
@@ -353,7 +383,7 @@ function ShiftSchedule() {
       setTempShibuts({ ...shibuts });
       setPopupOpen(true);
     },
-    [outposts]
+    [outposts, isCommander, campId]
   );
 
   const onDeleteClick = useCallback(async () => {
@@ -509,6 +539,32 @@ function ShiftSchedule() {
     }));
   }, [outposts, visibleOutpostIds]);
 
+  // ── תאריכים גלויים לפי תצוגה ────────────────────────────────────────────
+  const visibleDates = useMemo(() => {
+    const dates = [];
+    if (currentView === "day") {
+      const d = new Date(currentDate);
+      d.setHours(0, 0, 0, 0);
+      dates.push(d);
+    } else {
+      const weekStart = startOfWeek(new Date(currentDate), { weekStartsOn: 0 });
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        d.setHours(0, 0, 0, 0);
+        dates.push(d);
+      }
+    }
+    return dates;
+  }, [currentDate, currentView]);
+
+  // ── מינימום שומרים לפי עמדה ──────────────────────────────────────────────
+  const outpostMinGuards = useMemo(() => {
+    const m = new Map();
+    outpostsAndShifts.forEach((o) => m.set(o.id, o.minGuards ?? 1));
+    return m;
+  }, [outpostsAndShifts]);
+
   const calendarEvents = useMemo(() => {
     const splitEvents = [];
 
@@ -554,8 +610,57 @@ function ShiftSchedule() {
       }
     });
 
-    return splitEvents;
-  }, [shibutsim, visibleOutpostIds]);
+    // ── ספירת שיבוצים קיימים לכל (עמדה, משמרת, תאריך) ───────────────────────
+    const slotCounts = new Map();
+    shibutsim.forEach((s) => {
+      const d = new Date(s.start);
+      d.setHours(0, 0, 0, 0);
+      const key = `${s.outpostId}-${s.shiftId}-${d.getTime()}`;
+      slotCounts.set(key, (slotCounts.get(key) || 0) + 1);
+    });
+
+    // ── אירועי פנטום למשמרות עם חסר ─────────────────────────────────────────
+    const phantoms = [];
+    visibleDates.forEach((date) => {
+      const dateKey = date.getTime();
+      const jsDay = date.getDay();
+
+      outpostsAndShifts.forEach((outpost) => {
+        if (!visibleOutpostIds.includes(outpost.id)) return;
+        const minGuards = outpost.minGuards ?? 1;
+
+        (outpost.shifts || []).forEach((shift) => {
+          if (getDayNumber(getDayStr(shift.dayId)) !== jsDay) return;
+
+          const key = `${outpost.id}-${shift.id}-${dateKey}`;
+          const count = slotCounts.get(key) || 0;
+          const missing = minGuards - count;
+
+          for (let i = 0; i < missing; i++) {
+            const start = new Date(date);
+            start.setHours(shift.fromHour, 0, 0, 0);
+            const end = new Date(date);
+            end.setHours(shift.toHour === 24 ? 0 : shift.toHour, 0, 0, 0);
+            if (end <= start) end.setDate(end.getDate() + 1);
+
+            phantoms.push({
+              id: `phantom-${outpost.id}-${shift.id}-${dateKey}-${i}`,
+              isPhantom: true,
+              start,
+              end,
+              resourceId: outpost.id,
+              resource: outpost.id,
+              outpostId: outpost.id,
+              shiftId: shift.id,
+              title: "",
+            });
+          }
+        });
+      });
+    });
+
+    return [...splitEvents, ...phantoms];
+  }, [shibutsim, visibleOutpostIds, visibleDates, outpostsAndShifts, outpostMinGuards]);
 
   const handleOutpostFilterChange = useCallback((event) => {
     const value = event.target.value;
@@ -563,6 +668,17 @@ function ShiftSchedule() {
   }, []);
 
   const eventPropGetter = useCallback((event) => {
+    if (event.isPhantom) {
+      return {
+        style: {
+          backgroundColor: "rgba(220,38,38,0.07)",
+          border: "2px dashed #dc2626",
+          borderRadius: "6px",
+          color: "#dc2626",
+          cursor: isCommander ? "pointer" : "default",
+        },
+      };
+    }
     const baseColor = event.color || "#3174ad";
     const style = {
       backgroundColor: baseColor,
@@ -583,7 +699,50 @@ function ShiftSchedule() {
       )`;
     }
     return { style };
-  }, []);
+  }, [isCommander]);
+
+  const EventComponent = useCallback(
+    ({ event }) => {
+      if (event.isPhantom) {
+        const tooltipText = isCommander ? "לחץ לשיבוץ חייל" : "חסר שומר במשמרת זו";
+        return (
+          <Tooltip title={tooltipText} placement="top">
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                gap: 0.25,
+                py: 0.5,
+              }}
+            >
+              <AddCircleOutlineIcon sx={{ fontSize: 18, color: "#dc2626" }} />
+              <Box component="span" sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#dc2626", lineHeight: 1 }}>
+                חסר שיבוץ
+              </Box>
+            </Box>
+          </Tooltip>
+        );
+      }
+      return (
+        <Box
+          sx={{
+            px: 0.5,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+            fontSize: "inherit",
+            lineHeight: "inherit",
+          }}
+        >
+          {event.title}
+        </Box>
+      );
+    },
+    [isCommander]
+  );
 
   const messages = {
     today: "היום",
@@ -675,6 +834,8 @@ function ShiftSchedule() {
               startAccessor="start"
               endAccessor="end"
               defaultView="day"
+              view={currentView}
+              onView={setCurrentView}
               views={["day", "week"]}
               step={15}
               timeslots={4}
@@ -684,6 +845,7 @@ function ShiftSchedule() {
               onSelectSlot={isCommander ? handleSelectSlot : undefined}
               onSelectEvent={onShibutsClick}
               eventPropGetter={eventPropGetter}
+              components={{ event: EventComponent }}
               messages={messages}
               formats={rtlFormats}
               rtl={true}

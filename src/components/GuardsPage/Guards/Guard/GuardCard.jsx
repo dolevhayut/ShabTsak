@@ -15,6 +15,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
@@ -22,12 +23,14 @@ import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import { getGravatarUrl } from "../../../GuardProfile/GuardProfileLimits/utils.js";
 import { useNavigate } from "react-router-dom";
 import ShiftHistoryDialog from "./ShiftHistoryDialog";
+import RequestHistoryDialog from "./RequestHistoryDialog";
 import { useIsCommander } from "@/hooks/useIsCommander";
 
 const GuardCard = ({ campId, guard, onEdit, onDelete, index }) => {
   const navigate = useNavigate();
   const isCommander = useIsCommander();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [requestHistoryOpen, setRequestHistoryOpen] = useState(false);
   const emailValue = guard.mail?.trim() ? guard.mail : "—";
   const phoneValue = guard.phone?.trim() ? guard.phone : "—";
 
@@ -173,6 +176,16 @@ const GuardCard = ({ campId, guard, onEdit, onDelete, index }) => {
 
           {/* שמאל – פעולות משניות */}
           <Stack direction="row" alignItems="center" gap={0.25}>
+            <Tooltip title="היסטוריית בקשות">
+              <IconButton
+                size="small"
+                onClick={() => setRequestHistoryOpen(true)}
+                aria-label="היסטוריית בקשות"
+                sx={{ p: 0.75, color: "text.secondary", "&:hover": { color: "warning.main" } }}
+              >
+                <AssignmentOutlinedIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="היסטוריית משמרות">
               <IconButton
                 size="small"
@@ -214,6 +227,11 @@ const GuardCard = ({ campId, guard, onEdit, onDelete, index }) => {
         onClose={() => setHistoryOpen(false)}
         guard={guard}
         campId={campId}
+      />
+      <RequestHistoryDialog
+        open={requestHistoryOpen}
+        onClose={() => setRequestHistoryOpen(false)}
+        guard={guard}
       />
     </Paper>
   );

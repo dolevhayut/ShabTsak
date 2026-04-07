@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Alert,
   Box,
@@ -28,6 +30,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import { useQuery, useQueryClient } from "react-query";
 import { format } from "date-fns";
 import SelectCamp from "components/general_comps/SelectCamp";
@@ -37,12 +40,15 @@ import { logCommanderAction } from "@/services/commanderActionService";
 import {
   deleteShibuts,
   getShibutsById,
+  getShibutsimOfCurrentMonthByCampId,
   moveShibutsToDate,
   updateShibutsGuard,
 } from "@/services/shibutsService";
 import { getGuardsByCampId } from "@/services/guardService";
 import { getOutpostsAndShiftsForCampId } from "@/services/outpostService";
 import { toast } from "@/services/notificationService";
+import { getShiftRequestRecommendation } from "@/services/openaiService";
+import { getGuardsAndLimitsForCampId } from "@/services/guardService";
 
 const shiftRequestStatusLabels = {
   pending: "ממתין לאישור",
@@ -87,6 +93,8 @@ const ShiftRequestsPage = () => {
   const [targetShibuts, setTargetShibuts] = useState(null);
   const [contextLoading, setContextLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [aiRecommendation, setAiRecommendation] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // ── remote data ───────────────────────────────────────────────────────────
   const { data: requests = [], isLoading } = useQuery({
@@ -170,16 +178,80 @@ const ShiftRequestsPage = () => {
     setApprovalGuardId("");
     setApprovalNote("");
     setTargetShibuts(null);
+    setAiRecommendation(null);
 
+    // 1. Load shibuts context first (needed for AI too)
+    let resolvedShibuts = null;
     if (item.targetShibutsId) {
       setContextLoading(true);
       try {
-        const shibuts = await getShibutsById(item.targetShibutsId);
-        setTargetShibuts(shibuts);
+        resolvedShibuts = await getShibutsById(item.targetShibutsId);
+        setTargetShibuts(resolvedShibuts);
       } catch {
         // error toasted inside service
       } finally {
         setContextLoading(false);
+      }
+    }
+
+    // 2. Fetch AI recommendation with full context
+    if (import.meta.env.VITE_OPENAI_API_KEY && campId) {
+      setAiLoading(true);
+      try {
+        const guardsWithLimits = await getGuardsAndLimitsForCampId(campId);
+        const requesterData = guardsWithLimits.find((g) => g.guard?.id === item.requesterGuardId);
+        const guard = guardMap.get(item.requesterGuardId);
+
+        // Build outpost name lookup from already-loaded outpostsAndShifts
+        const outpostMapLocal = new Map(outpostsAndShifts.map((o) => [o.id, o.name]));
+
+        // Build shiftInfo from resolved shibuts
+        let resolvedShiftInfo = null;
+        if (resolvedShibuts) {
+          const shiftData = shiftMap.get(resolvedShibuts.shiftId);
+          const shibutsGuard = guardMap.get(resolvedShibuts.guardId);
+          resolvedShiftInfo = {
+            guardName: shibutsGuard?.name || `שומר #${resolvedShibuts.guardId}`,
+            outpostName: shiftData?.outpostName || outpostMapLocal.get(resolvedShibuts.outpostId) || `עמדה #${resolvedShibuts.outpostId}`,
+            hours: shiftData ? `${String(shiftData.fromHour).padStart(2,"0")}:00–${String(shiftData.toHour).padStart(2,"0")}:00` : "—",
+            date: resolvedShibuts.theDate
+              ? new Date(Number(resolvedShibuts.theDate)).toLocaleDateString("he-IL")
+              : "—",
+          };
+        }
+
+        // Guard stats for load comparison — count current-month shibuts per guard
+        const allShibuts = await getShibutsimOfCurrentMonthByCampId(campId) ?? [];
+        const countByGuard = allShibuts.reduce((acc, s) => {
+          acc[s.guardId] = (acc[s.guardId] ?? 0) + 1;
+          return acc;
+        }, {});
+        const guardsStats = guardsWithLimits.map((g) => ({
+          guard: g.guard,
+          totalShibuts: countByGuard[g.guard?.id] ?? 0,
+        }));
+
+        const rec = await getShiftRequestRecommendation({
+          request: item,
+          guard,
+          guardLimits: requesterData
+            ? {
+                timeLimits: requesterData.timeLimits,
+                dayLimits: requesterData.dayLimits,
+                outpostLimits: requesterData.outpostLimits,
+                peerExclusions: requesterData.peerExclusions,
+              }
+            : {},
+          guards,
+          shiftInfo: resolvedShiftInfo,
+          outpostMap: outpostMapLocal,
+          guardsStats,
+        });
+        setAiRecommendation(rec);
+      } catch {
+        // silent – AI is optional
+      } finally {
+        setAiLoading(false);
       }
     }
   };
@@ -187,6 +259,7 @@ const ShiftRequestsPage = () => {
   const onCloseApprovalDialog = () => {
     setApprovalDialog({ open: false, item: null });
     setTargetShibuts(null);
+    setAiRecommendation(null);
   };
 
   const isApprovalConfirmDisabled = () => {
@@ -280,6 +353,7 @@ const ShiftRequestsPage = () => {
           <TableHead>
             <TableRow>
               <TableCell>מזהה</TableCell>
+              <TableCell>מבקש</TableCell>
               <TableCell>סוג בקשה</TableCell>
               <TableCell>תאריך מבוקש</TableCell>
               <TableCell>סיבה</TableCell>
@@ -290,12 +364,17 @@ const ShiftRequestsPage = () => {
           <TableBody>
             {!isLoading && requests.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6}>אין בקשות בטווח הנוכחי</TableCell>
+                <TableCell colSpan={7}>אין בקשות בטווח הנוכחי</TableCell>
               </TableRow>
             )}
             {requests.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>{item.id}</TableCell>
+                <TableCell>
+                  {item.requesterGuardId
+                    ? (guardMap.get(item.requesterGuardId)?.name ?? `שומר #${item.requesterGuardId}`)
+                    : "—"}
+                </TableCell>
                 <TableCell>{item.requestType === "swap" ? "החלפה" : "אילוץ"}</TableCell>
                 <TableCell>{item.requestedPayload?.requestedDate || "—"}</TableCell>
                 <TableCell>{item.reason}</TableCell>
@@ -344,8 +423,15 @@ const ShiftRequestsPage = () => {
       </TableContainer>
 
       {/* ── Approval Dialog ── */}
-      <Dialog open={approvalDialog.open} onClose={onCloseApprovalDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>אישור בקשה</DialogTitle>
+      <Dialog open={approvalDialog.open} onClose={onCloseApprovalDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+          אישור בקשה
+          {approvalDialog.item?.requesterGuardId && (
+            <Typography variant="subtitle2" color="text.secondary" component="span" sx={{ ml: 1 }}>
+              — {guardMap.get(approvalDialog.item.requesterGuardId)?.name ?? `שומר #${approvalDialog.item.requesterGuardId}`}
+            </Typography>
+          )}
+        </DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
           <Stack spacing={2}>
             {/* context banner */}
@@ -452,6 +538,47 @@ const ShiftRequestsPage = () => {
 
             <Divider />
 
+            {/* AI recommendation */}
+            {import.meta.env.VITE_OPENAI_API_KEY && (
+              <Box>
+                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.75 }}>
+                  <SmartToyIcon fontSize="small" color="primary" />
+                  <Typography variant="caption" fontWeight={700} color="primary">
+                    ניתוח והמלצת AI
+                  </Typography>
+                  {aiLoading && <CircularProgress size={12} sx={{ ml: 0.5 }} />}
+                </Stack>
+                {aiLoading ? (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="caption" color="text.secondary">
+                      בודק אילוצים, עומס שמירות וחלופות…
+                    </Typography>
+                  </Stack>
+                ) : aiRecommendation ? (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 1.5,
+                      bgcolor: "primary.50",
+                      borderColor: "primary.200",
+                      borderRadius: 1.5,
+                      "& p": { m: 0, mb: 0.5, fontSize: 14 },
+                      "& ul, & ol": { m: 0, pl: 2.5, fontSize: 14 },
+                      "& li": { mb: 0.25 },
+                      "& strong": { fontWeight: 700 },
+                      "& h1, & h2, & h3": { fontSize: 14, fontWeight: 700, mb: 0.5, mt: 0.5 },
+                    }}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {aiRecommendation}
+                    </ReactMarkdown>
+                  </Paper>
+                ) : null}
+              </Box>
+            )}
+
+            <Divider />
+
             {/* commander note */}
             <TextField
               fullWidth
@@ -480,7 +607,14 @@ const ShiftRequestsPage = () => {
 
       {/* ── Rejection Dialog ── */}
       <Dialog open={rejectDialog.open} onClose={onCloseRejectDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>דחיית בקשה</DialogTitle>
+        <DialogTitle>
+          דחיית בקשה
+          {rejectDialog.item?.requesterGuardId && (
+            <Typography variant="subtitle2" color="text.secondary" component="span" sx={{ ml: 1 }}>
+              — {guardMap.get(rejectDialog.item.requesterGuardId)?.name ?? `שומר #${rejectDialog.item.requesterGuardId}`}
+            </Typography>
+          )}
+        </DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
           {rejectDialog.item?.reason && (
             <Box sx={{ mb: 2 }}>

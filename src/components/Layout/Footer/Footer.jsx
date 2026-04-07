@@ -80,12 +80,6 @@ export default function Footer() {
             >
               נוצר על ידי בולדוג פתרונות מדיה
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: "#AEAEB2", fontSize: "0.8125rem", lineHeight: 1.5 }}
-            >
-              Powered By React Big Calendar
-            </Typography>
           </Box>
         </Stack>
       </Container>

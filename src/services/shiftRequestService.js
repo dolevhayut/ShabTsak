@@ -62,6 +62,22 @@ export async function getShiftRequestsByUser(requesterUserId) {
   }
 }
 
+export async function getShiftRequestsByGuardId(guardId) {
+  try {
+    const { data, error } = await supabase
+      .from("shift_requests")
+      .select("*")
+      .eq("requesterGuardId", guardId)
+      .order("createdAt", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error(error);
+    toast.error("נכשל בטעינת היסטוריית הבקשות");
+    return [];
+  }
+}
+
 export async function updateShiftRequestStatus(requestId, nextStatus, reviewerUserId, reviewNote) {
   try {
     const creds = getCredentials();

@@ -3,7 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { defaultValues } from "components/GuardsPage/Guards/Guard/GuardDialogAddOrEdit/defaultValues.js";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { schema } from "components/GuardsPage/Guards/Guard/GuardDialogAddOrEdit/schema.js";
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Checkbox, FormControlLabel, Typography } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material";
 import { toast } from "@/services/notificationService";
 import {useMutation, useQueryClient} from "react-query";
 import { addNewGuard, updateGuard } from "@/services/guardService.js";
@@ -85,17 +85,22 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
             {...register("color")}
             helperText={<FormError error={formState.errors?.color?.message} />}
           />
-          <FormControlLabel
-            control={
-              <Controller
-                control={control}
-                name="shouldBeAllocated"
-                render={({ field }) => {
-                  return <Checkbox {...field} checked={field.value} color="primary" />;
-                }}
-              />
-            }
-            label="יש להקצות למשמרת"
+          <Controller
+            control={control}
+            name="shouldBeAllocated"
+            render={({ field }) => (
+              <FormControl fullWidth margin="dense">
+                <InputLabel>סטטוס שיבוץ</InputLabel>
+                <Select
+                  {...field}
+                  value={field.value ?? true}
+                  label="סטטוס שיבוץ"
+                >
+                  <MenuItem value={true}>משובץ אוטומטית</MenuItem>
+                  <MenuItem value={false}>לא משובץ</MenuItem>
+                </Select>
+              </FormControl>
+            )}
           />
         </DialogContent>
         <DialogActions>
