@@ -3,14 +3,18 @@ import UserService, { UserInfo } from "@/services/userService";
 
 type AuthContextType = {
     user: UserInfo | undefined | null;
-    login: (authCode: string) => void;
+    // eslint-disable-next-line no-unused-vars
+    login: (_payload: { id: string; phone: string }) => Promise<void>;
+    // eslint-disable-next-line no-unused-vars
+    register: (_payload: { name: string; id: string; phone: string }) => Promise<void>;
     logout: () => void;
     init: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: undefined,
-    login: () => {},
+    login: async () => {},
+    register: async () => {},
     logout: () => {},
     init: () => {},
 });
@@ -41,8 +45,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         }
     }
 
-    async function login(authCode: string) {
-        const userInfo = await UserService.login(authCode);
+    async function login(payload: { id: string; phone: string }) {
+        const userInfo = await UserService.login(payload);
+        setUser(userInfo);
+        clearTimeout(refreshTokenTimeout.current);
+        refreshTokenTimeout.current = setTimeout(_refreshToken, refreshTokenInterval);
+    }
+
+    async function register(payload: { name: string; id: string; phone: string }) {
+        const userInfo = await UserService.register(payload);
         setUser(userInfo);
         clearTimeout(refreshTokenTimeout.current);
         refreshTokenTimeout.current = setTimeout(_refreshToken, refreshTokenInterval);
@@ -62,7 +73,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }, []);
 
 
-    return <AuthContext.Provider value={{ user, init, login, logout }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, init, login, register, logout }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuthContext = () => {

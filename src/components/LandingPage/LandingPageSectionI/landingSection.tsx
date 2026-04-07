@@ -1,5 +1,4 @@
-import { Box, Container, Typography } from "@mui/material";
-import image from "/images/landing.jpeg";
+import { Box, Container, Grid, Typography } from "@mui/material";
 import { motion, useInView, useAnimation } from "framer-motion";
 import { delayedVariant, riseWithFade } from "@/utils/motionVariants";
 import { LandingSectionProps } from "components/LandingPage/landingPageContent";
@@ -12,55 +11,128 @@ const LandingSection = ({
     contentTwo
 }: LandingSectionProps) => {
     const ref = useRef<HTMLDivElement | null>(null);
-    const inView = useInView(ref, { once: true, amount: 0.5 });
+    const inView = useInView(ref, { once: true, amount: 0.3 });
     const controls = useAnimation();
+
     useEffect(() => {
         if (inView) {
             controls.start("animate");
         }
-    }, [controls, inView])
-    // const sectionInView = useInView({ root: "how-does-it-work" }, { once: true, amount: 50 });
+    }, [controls, inView]);
+
+    const allSteps = [...content, ...contentTwo];
+
     return (
-        <Box sx={{
-            backgroundColor: "rgb(163, 183, 208)",
-            backgroundImage: `url(${image})`,
-            backgroundSize: "cover",
-            backgroundPosition: "33% 33%",
-            position: "relative"
-        }} component={"section"}>
-            <Container
-                id="how-does-it-work"
-                initial="initial" animate="animate"
-                component={motion.div}
-                ref={ref}
-                sx={{
-                py: 12,
-                px: { xs: 3.5, md: 6 },
-                color: "white !important",
-                textShadow: "1px 1px 10px #0003",
-            }}>
-                <Typography component="hgroup">
-                    <Typography variant="h5" fontSize={17} gutterBottom component={motion.h5} variants={delayedVariant(riseWithFade, 1500)}>{preface}</Typography>
-                    <Typography variant="h2" gutterBottom fontWeight={700} component={motion.h2} variants={delayedVariant(riseWithFade, 2000)}>{title}</Typography>
-                </Typography>
-                <br/>
-                <Typography variant="h6" fontSize={20} component={motion.div} variants={delayedVariant(riseWithFade, 2500)}>
-                    {content.map((paragraph, index) => (
-                        <p key={index}>{paragraph}</p>
+        <Box
+            component="section"
+            id="how-does-it-work"
+            sx={{
+                background: "#5A6848",
+                borderTop: "2px solid #C8A94A",
+                borderBottom: "2px solid #3F4A31",
+                py: { xs: 8, md: 12 },
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    inset: 0,
+                    backgroundImage:
+                        "url('https://images.unsplash.com/photo-1762247789974-2c1029cc04d7?auto=format&fit=crop&w=1600&q=80')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    opacity: 0.08,
+                    pointerEvents: "none",
+                },
+            }}
+        >
+            <Container maxWidth="lg" ref={ref} sx={{ position: "relative", zIndex: 1 }}>
+                {/* Section heading */}
+                <Box sx={{ textAlign: "center", mb: { xs: 6, md: 8 } }}>
+                    <Typography
+                        component={motion.p}
+                        variants={delayedVariant(riseWithFade, 200)}
+                        initial="initial"
+                        animate={controls}
+                        sx={{
+                            fontSize: "0.875rem",
+                            fontWeight: 500,
+                            color: "#F1D36E",
+                            letterSpacing: "0.05em",
+                            textTransform: "uppercase",
+                            mb: 1.5,
+                        }}
+                    >
+                        {preface}
+                    </Typography>
+                    <Typography
+                        variant="h2"
+                        fontWeight={700}
+                        component={motion.h2}
+                        variants={delayedVariant(riseWithFade, 400)}
+                        initial="initial"
+                        animate={controls}
+                        sx={{
+                            fontSize: { xs: "1.75rem", md: "2.25rem" },
+                            color: "#F8F4DD",
+                            letterSpacing: "-0.3px",
+                        }}
+                    >
+                        {title}
+                    </Typography>
+                </Box>
+
+                {/* Bento grid of steps */}
+                <Grid container spacing={{ xs: 1.5, md: 2 }}>
+                    {allSteps.map((paragraph, index) => (
+                        <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                            md={index === 0 ? 8 : index === 1 ? 4 : index === 2 ? 4 : index === 3 ? 8 : 6}
+                            key={index}
+                        >
+                            <Box
+                                component={motion.div}
+                                variants={delayedVariant(riseWithFade, 300 + index * 150)}
+                                initial="initial"
+                                animate={controls}
+                                sx={{
+                                    background: index % 2 === 0 ? "rgba(27,34,22,0.78)" : "rgba(47,59,42,0.75)",
+                                    border: "1px solid rgba(200,169,74,0.45)",
+                                    borderRadius: "16px",
+                                    p: { xs: "20px", md: "28px" },
+                                    height: "100%",
+                                    minHeight: { xs: "auto", md: index < 2 ? "180px" : "140px" },
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2,
+                                }}
+                            >
+                                <Typography
+                                    sx={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: 700,
+                                        color: "#F1D36E",
+                                        letterSpacing: "0.08em",
+                                        fontVariantNumeric: "tabular-nums",
+                                    }}
+                                >
+                                    {String(index + 1).padStart(2, "0")}
+                                </Typography>
+                                <Typography
+                                    sx={{
+                                        fontSize: { xs: "0.9375rem", md: "1rem" },
+                                        color: "#F8F4DD",
+                                        lineHeight: 1.65,
+                                    }}
+                                >
+                                    {paragraph}
+                                </Typography>
+                            </Box>
+                        </Grid>
                     ))}
-                    <br/>
-                    {contentTwo.map((paragraph, index) => (
-                        <p key={index}>{paragraph}</p>
-                    ))}
-                </Typography>
-                <Typography component="small"
-                            sx={{ position: "absolute", bottom: 6, right: 0, px: 3 }}
-                            fontWeight={300}
-                            color="#010010"
-                            letterSpacing={0.3}
-                            variant="body1"
-                >
-                    Photo by Levi Meir Clancy on Unsplash ©</Typography>
+                </Grid>
             </Container>
         </Box>
     );

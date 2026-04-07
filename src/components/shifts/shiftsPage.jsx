@@ -9,9 +9,11 @@ import ShiftList from "./shiftList/shiftList";
 import BackLink from "../general_comps/BackLink.jsx";
 import LoadingComp from "../general_comps/LoadingComp.jsx";
 import { getShiftsByOutpostId } from "@/services/shiftService.js";
+import { useIsCommander } from "@/hooks/useIsCommander";
 
 export default function ShiftsPage() {
     const params = useParams();
+    const isCommander = useIsCommander();
     const [openDialog, setOpenDialog] = useState(false);
     const [item, setItem] = useState(null);
     const outpostId = params["id"];
@@ -40,11 +42,10 @@ export default function ShiftsPage() {
 
     return (
         <div className="shifts-page">
-            <Container fixed>
-                {/* btn-add Shift */}
-                <AddShiftBtn setOpenDialog={setOpenDialog}/>
+            <Container maxWidth={false} disableGutters>
+                {isCommander && <AddShiftBtn setOpenDialog={setOpenDialog}/>}
 
-                <Typography variant="h3" component="h2" mb={2}>
+                <Typography variant="h2" component="h1" mb={3}>
                     רשימת משמרות {params["name"]}
                 </Typography>
 
@@ -58,7 +59,7 @@ export default function ShiftsPage() {
                     <ShiftList shifts={shifts} onDuplciateShift={onDuplicateShift}/>
                 )}
 
-                {openDialog && (
+                {isCommander && openDialog && (
                     <DialogShift
                         onCloseDialog={() => {
                             setOpenDialog(false);

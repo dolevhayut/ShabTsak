@@ -1,45 +1,60 @@
-import { SHIFT_URL } from "../constants/apiConstants";
-import { doApiGet, doApiMethod } from "./apiService.ts";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
+import { supabase } from "./supabaseClient";
+import { getCredentials } from "./authCredentials";
 
 export async function getShiftsByOutpostId(outpostId) {
-    let url = SHIFT_URL + "/outpost/" + outpostId;
     try {
-        let resp = await doApiGet(url);
-        if (resp.status === 200) {
-            return resp.data;
-        }
-        else toast.error(resp.message);
-    }
-    catch (err) {
+        const { data, error } = await supabase
+            .from("shifts")
+            .select("*")
+            .eq("outpostId", outpostId)
+            .order("dayId")
+            .order("fromHour");
+        if (error) throw error;
+        return data;
+    } catch (err) {
         console.log(err);
         toast.error("יש בעיה בבקשה נסה מאוחר יותר");
     }
 }
 
-
 export async function deleteShift(shiftId) {
-    let url = SHIFT_URL + "/" + shiftId;
     try {
-        let resp = await doApiMethod(url, "DELETE");
-        if (resp.status === 200) {
-            return resp.data;
-        }
-    }
-    catch (err) {
+        const creds = getCredentials();
+        const { error } = await supabase.rpc("rpc_delete_shift", {
+            ...creds,
+            p_shift_id: shiftId,
+        });
+        if (error) throw error;
+    } catch (err) {
         console.log(err);
     }
 }
 
 export async function createOrUpdateShift(bodyFormData, method = "POST") {
     try {
-        let resp = await doApiMethod(SHIFT_URL, method, bodyFormData);
-        if (resp.status >= 200 && resp.status < 300) {
-            return resp.data;
-        } else {
-            toast.error(resp.message);
+        const creds = getCredentials();
+        if (method === "POST") {
+            const { data, error } = await supabase.rpc("rpc_create_shift", {
+                ...creds,
+                p_outpost_id: bodyFormData.outpostId,
+                p_day_id: bodyFormData.dayId,
+                p_from_hour: bodyFormData.fromHour,
+                p_to_hour: bodyFormData.toHour,
+            });
+            if (error) throw error;
+            return { id: data, ...bodyFormData };
+        } else if (method === "PUT") {
+            const { error } = await supabase.rpc("rpc_create_shift", {
+                ...creds,
+                p_outpost_id: bodyFormData.outpostId,
+                p_day_id: bodyFormData.dayId,
+                p_from_hour: bodyFormData.fromHour,
+                p_to_hour: bodyFormData.toHour,
+            });
+            if (error) throw error;
+            return bodyFormData;
         }
-
     } catch (err) {
         throw err;
     }

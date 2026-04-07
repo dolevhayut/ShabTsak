@@ -8,7 +8,7 @@ import PrivacyContent from 'components/PrivacyPage/PrivacyContent/PrivacyContent
 
 export default function PrivacyPage() {
 
-    return (<Container sx={{mt: 4.5}} disableGutters>
+    return (<Container sx={{mt: 1}} disableGutters maxWidth={false}>
             <BackLink to={ROUTES.HOME}>חזרה לעמוד הבית</BackLink>
             <Box as="hgroup" sx={{mx: {sm: 2}}}>
                 <Typography variant="h2" align="center" sx={{mt: {sm: -4.5}}}>תנאי פרטיות</Typography>

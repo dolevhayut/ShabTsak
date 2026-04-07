@@ -8,9 +8,11 @@ import { GuardDialogDelete } from "@/components/GuardsPage/Guards/Guard/GuardDia
 import BackLink from "@/components/general_comps/BackLink";
 import { useLocation } from "react-router-dom";
 import ROUTES from "@/constants/routeConstants";
+import { useIsCommander } from "@/hooks/useIsCommander";
 
 const GuardsPage = () => {
   const { state } = useLocation();
+  const isCommander = useIsCommander();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMethod, setDialogMethod] = useState("POST");
   const [selectedGuardId, setSelectedGuardId] = useState(null);
@@ -47,8 +49,8 @@ const GuardsPage = () => {
   };
 
   return (
-    <Container sx={{ py: 4 }}>
-      <SelectCamp selectedCampId={selectedCampId} setSelectedCampId={setSelectedCampId} title="שומרים" title2={"בבסיס:"} />
+    <Container maxWidth={false} disableGutters sx={{ py: 1 }}>
+      <SelectCamp selectedCampId={selectedCampId} setSelectedCampId={setSelectedCampId} title="חיילים" title2={"בבסיס:"} />
 
       <Box
         sx={{
@@ -58,13 +60,13 @@ const GuardsPage = () => {
           marginTop: 2,
         }}
       >
-        {selectedCampId && (
+        {selectedCampId && isCommander && (
           <Button variant="contained" onClick={handleOpenAddDialog}>
-            הוסף שומר
+            הוסף חייל
           </Button>
         )}
       </Box>
-      {selectedCampId && <Guards campId={+selectedCampId} handleEdit={handleOpenEditDialog} handleDelete={handleOpenDeleteDialog} />}
+      {selectedCampId && <Guards campId={+selectedCampId} handleEdit={isCommander ? handleOpenEditDialog : undefined} handleDelete={isCommander ? handleOpenDeleteDialog : undefined} />}
       {dialogOpen && <GuardDialogAddOrEdit open={dialogOpen} close={handleCloseDialog} guardId={selectedGuardId} campId={selectedCampId} method={dialogMethod} guardDetails={guardDetails} />}
       {deleteDialogOpen && guardToDelete && <GuardDialogDelete guard={guardToDelete} closeDialog={handleCloseDeleteDialog} open={deleteDialogOpen} />}
       <BackLink to={ROUTES.HOME} place="end" icon={<ArrowBackIosIcon />}>

@@ -12,33 +12,69 @@ CampItem.propTypes = {
 function CampItem({ item, index }) {
   const nav = useNavigate();
   return (
-    <TableRow>
-      <TableCell align="center">{index + 1}</TableCell>
-      <TableCell align="center">{item.name}</TableCell>
+    <TableRow
+      sx={{
+        "&:hover": { backgroundColor: "action.hover" },
+        transition: "background-color 0.15s ease",
+      }}
+    >
+      <TableCell
+        align="center"
+        sx={{ color: "text.disabled", fontSize: "0.8125rem", fontWeight: 400 }}
+      >
+        {index + 1}
+      </TableCell>
+
+      <TableCell
+        align="center"
+        sx={{ fontWeight: 500, fontSize: "0.9375rem", color: "text.primary" }}
+      >
+        {item.name}
+      </TableCell>
+
       <TableCell align="center">
         <Button
-          color="purple"
           variant="outlined"
+          size="small"
+          color="primary"
           onClick={() => {
             nav(`${ROUTES.OUTPOSTS}/camp/${item.id}/${item.name}`);
+          }}
+          sx={{
+            borderRadius: "8px",
+            fontWeight: 500,
+            fontSize: "0.8125rem",
+            px: 2,
           }}
         >
           עמדות
         </Button>
       </TableCell>
+
       <TableCell align="center">
         <Button
-          color="brown"
           variant="outlined"
+          size="small"
           onClick={() => {
-            nav(ROUTES.GUARDS,{state:{campId: item.id}})
+            nav(ROUTES.GUARDS, { state: { campId: item.id } });
+          }}
+          sx={{
+            borderRadius: "8px",
+            borderColor: "divider",
+            color: "text.secondary",
+            fontWeight: 500,
+            fontSize: "0.8125rem",
+            px: 2,
+            "&:hover": {
+              borderColor: "text.secondary",
+              backgroundColor: "action.hover",
+            },
           }}
         >
-          שומרים
+          חיילים
         </Button>
       </TableCell>
 
-      {/* action btns */}
       <TableCell
         sx={{
           display: "flex",

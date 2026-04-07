@@ -5,14 +5,19 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DialogDelete from '../../../../general_comps/dialogs/dialogDelete';
 import OutpostDialog from '../../../outpostDialog';
+import { useIsCommander } from "@/hooks/useIsCommander";
 
 OutpostItemActions.propTypes = {
     item: PropTypes.object.isRequired
 }
 
 export default function OutpostItemActions({ item }) {
+    const isCommander = useIsCommander();
     const [openDialog, setOpenDialog] = useState(false);
     const [openSureDialog, setOpenSureDialog] = useState(false);
+
+    if (!isCommander) return null;
+
     return (
         <>
             <IconButton
@@ -30,7 +35,6 @@ export default function OutpostItemActions({ item }) {
                 item={item}
             />
 
-            {/* Outpost button delete */}
             <IconButton aria-label="delete" color="error" onClick={() => {
                 setOpenSureDialog(true);
             }}>
@@ -38,7 +42,6 @@ export default function OutpostItemActions({ item }) {
             </IconButton>
 
             <DialogDelete openDialog={openSureDialog} setOpenDialog={setOpenSureDialog} subject={"outpost"} item={item} />
-
         </>
     )
 }

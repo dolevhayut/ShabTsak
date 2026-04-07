@@ -18,7 +18,7 @@ function OutpostItem({ item }) {
 
             <TableCell align="center">
                 <Button
-                    color="orange"
+                    color="secondary"
                     variant="outlined"
                     onClick={() => {
                         nav(`${ROUTES.SHIFTS}/outpost/${item.id}/${item.name}`)

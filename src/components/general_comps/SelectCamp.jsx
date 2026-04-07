@@ -26,8 +26,15 @@ function SelectCamp({ selectedCampId, setSelectedCampId, onCampChange, title, ti
     const darkMode = useDarkModeStore((s) => s.darkMode);
 
     return (
-        <Stack direction="row" gap={0.5} alignItems="center" flexWrap="wrap" paddingX={1.5} paddingTop={1}>
-            <Typography variant="h3" component="h2" whiteSpace="nowrap">
+        <Stack
+            direction="row"
+            gap={1}
+            alignItems="center"
+            flexWrap="wrap"
+            justifyContent="space-between"
+            sx={{ width: "100%", mb: 2 }}
+        >
+            <Typography variant="h2" component="h1" whiteSpace="nowrap">
                 {title}
             </Typography>
 
@@ -36,7 +43,7 @@ function SelectCamp({ selectedCampId, setSelectedCampId, onCampChange, title, ti
             ) : (
                 camps?.length !== 0 && (
                     <Stack direction="row" alignItems="center" gap={1}>
-                        {title2 && <Typography variant="h3">{title2}</Typography>}
+                        {title2 && <Typography variant="body1" sx={{ fontWeight: 600 }}>{title2}</Typography>}
                         <FormControl>
                             <TextField
                                 select

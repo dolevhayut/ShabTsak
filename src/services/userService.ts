@@ -1,47 +1,120 @@
-import axios from "axios";
 import localStorageService from "@/services/localStorageService";
-import { TOKEN_NAME } from "@/services/apiService";
 import { refreshTokenInterval } from "@/context/AuthContext";
+import { supabase } from "@/services/supabaseClient";
+
+export const TOKEN_NAME = "FOODS_TOKEN";
 
 type TokenType = {
-    access_token: string,
-    expires_in: number,
-    refresh_token: string,
-    scope: string,
     token_type: string,
     id_token: string,
 }
 
-export type UserInfoType = {
-    sub: string,
-    name: string,
-    given_name: string,
-    family_name: string,
-    picture: string,
-    email: string,
-    verified_email: boolean,
-    locale: string,
-}
-
 export type UserInfo = {
     id: string;
-    email: string;
+    phone: string;
     name: string;
-    picture: string;
+    email?: string | null;
+    picture?: string | null;
+    role?: string | null;
 }
 
 export type LoginReturnType = {
     token: TokenType,
-    userInfo: UserInfoType,
+    userInfo: UserInfo,
     lastLogin: number,
 }
 
-async function login(authCode: string) {
-    const token = await _getAccessToken(authCode);
-    const userInfo = await _getUserInfo(token.access_token);
+type LoginPayload = {
+    id: string;
+    phone: string;
+}
+
+async function login(payload: LoginPayload) {
+    const id = payload.id.trim();
+    const phone = payload.phone.trim();
+
+    const { data, error } = await supabase
+        .from("users")
+        .select("id, phone, name, email, picture, role")
+        .eq("id", id)
+        .eq("phone", phone)
+        .maybeSingle();
+
+    if (error) {
+        throw new Error(error.message || "Failed to login with Supabase");
+    }
+
+    if (!data) {
+        throw new Error("פרטי ההתחברות לא נמצאו");
+    }
+
+    const userInfo: UserInfo = {
+        id: String(data.id),
+        phone: String(data.phone),
+        name: data.name || "חייל",
+        email: data.email || null,
+        picture: data.picture || null,
+        role: data.role || "member",
+    };
+
+    const token: TokenType = {
+        token_type: "Bearer",
+        id_token: `${userInfo.id}:${userInfo.phone}`,
+    };
+
     const lastLogin = new Date().getTime();
     localStorageService.set<LoginReturnType>(TOKEN_NAME, { token, userInfo, lastLogin });
-    return _normalizeUserInfo(userInfo);
+    return userInfo;
+}
+
+type RegisterPayload = {
+    name: string;
+    id: string;
+    phone: string;
+};
+
+async function register(payload: RegisterPayload) {
+    const name = payload.name.trim();
+    const id = payload.id.trim();
+    const phone = payload.phone.trim();
+
+    const { data: existing } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", id)
+        .maybeSingle();
+
+    if (existing) {
+        throw new Error("חייל עם תעודת זהות זו כבר קיים במערכת");
+    }
+
+    const { data, error } = await supabase
+        .from("users")
+        .insert({ id, phone, name })
+        .select("id, phone, name, email, picture, role")
+        .single();
+
+    if (error) {
+        throw new Error(error.message || "ההרשמה נכשלה");
+    }
+
+    const userInfo: UserInfo = {
+        id: String(data.id),
+        phone: String(data.phone),
+        name: data.name || "חייל",
+        email: data.email || null,
+        picture: data.picture || null,
+        role: data.role || "member",
+    };
+
+    const token: TokenType = {
+        token_type: "Bearer",
+        id_token: `${userInfo.id}:${userInfo.phone}`,
+    };
+
+    const lastLogin = new Date().getTime();
+    localStorageService.set<LoginReturnType>(TOKEN_NAME, { token, userInfo, lastLogin });
+    return userInfo;
 }
 
 async function logout() {
@@ -51,16 +124,9 @@ async function logout() {
 let tries = 0;
 async function refreshToken(): Promise<UserInfo | null> {
     try {
-        const refreshToken = localStorageService.get<LoginReturnType>(TOKEN_NAME)?.token.refresh_token;
-        if (!refreshToken) {
-            return null;
-        }
-        const newToken = await _refreshToken(refreshToken);
-        newToken.refresh_token = refreshToken;
-        const userInfo = await _getUserInfo(newToken.access_token);
-        const lastLogin = new Date().getTime();
-        localStorageService.set<LoginReturnType>(TOKEN_NAME, { token: newToken, userInfo, lastLogin });
-        return _normalizeUserInfo(userInfo);
+        const loginInfo = localStorageService.get<LoginReturnType>(TOKEN_NAME);
+        if (!loginInfo?.userInfo) return null;
+        return loginInfo.userInfo;
     } catch (error) {
         if (navigator.onLine) {
             console.log(error);
@@ -83,67 +149,26 @@ async function getUser(): Promise<UserInfo | null> {
         if (!loginInfo) {
             return null;
         }
-        const { token, userInfo, lastLogin } = loginInfo;
-        if (!token?.refresh_token) {
-            console.error("No refresh token");
-            return null;
-        }
+        const { userInfo, lastLogin } = loginInfo;
         const now = new Date().getTime();
         const diff = now - lastLogin;
         if (diff > refreshTokenInterval) {
-            const newToken = await _refreshToken(token.refresh_token);
-            newToken.refresh_token = token.refresh_token;
-            localStorageService.set<LoginReturnType>(TOKEN_NAME, { token: newToken, userInfo, lastLogin: now });
+            localStorageService.set<LoginReturnType>(TOKEN_NAME, {
+                ...loginInfo,
+                lastLogin: now
+            });
         }
-        return _normalizeUserInfo(userInfo);
+        return userInfo;
     } catch (err) {
         console.error(err);
         return null;
     }
 }
 
-async function _getAccessToken(authCode: string): Promise<TokenType> {
-    const response = await axios.post("https://oauth2.googleapis.com/token", {
-        redirect_uri: import.meta.env.PROD ? "https://shabtsak.top" : "http://localhost:5173",
-        client_id: import.meta.env.VITE_CLIENT_ID,
-        client_secret: import.meta.env.VITE_CLIENT_SECRET,
-        grant_type: "authorization_code",
-        code: authCode,
-    });
-    return response.data;
-}
-
-async function _getUserInfo(accessToken: string): Promise<UserInfoType> {
-    const response = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-        headers: {
-            Authorization: `Bearer ${accessToken}`
-        }
-    });
-    return response.data;
-}
-
-async function _refreshToken(refreshToken: string) {
-    const response = await axios.post("https://oauth2.googleapis.com/token", {
-        client_id: import.meta.env.VITE_CLIENT_ID,
-        client_secret: import.meta.env.VITE_CLIENT_SECRET,
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
-    });
-    return response.data;
-}
-
-function _normalizeUserInfo(userInfo: UserInfoType) {
-    return {
-        id: userInfo.sub,
-        name: userInfo.given_name,
-        email: userInfo.email,
-        picture: userInfo.picture,
-    }
-}
-
 
 const UserService = {
     login,
+    register,
     logout,
     getUser,
     refreshToken,

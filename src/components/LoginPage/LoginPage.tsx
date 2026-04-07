@@ -1,11 +1,9 @@
-import React from 'react';
 import ROUTES from '@/constants/routeConstants';
 import { Box, Typography, Container } from "@mui/material";
 import { theme } from "@/theme/theme";
 import { ThemeProvider } from "@mui/material/styles";
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import LoginButton from "components/general_comps/LoginButton.jsx";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/context/AuthContext";
 export default function LoginPage() {
     const { user } = useAuthContext();
@@ -28,11 +26,18 @@ export default function LoginPage() {
                     gap: 2,
                     textAlign: "center"
                 }}>
-                    <Typography variant="h1">ברוכים הבאים לשבצ״ק!</Typography>
-                    <Typography variant="body2">כדי לצפות בשמירות ולבצע שינויים<br />יש להתחבר  </Typography>
-                    <GoogleOAuthProvider clientId={import.meta.env.VITE_CLIENT_ID || "CLIENT_ID_MISSING"}>
-                        <LoginButton />
-                    </GoogleOAuthProvider>
+                    <Typography variant="h1">ברוכים הבאים לשבצ׳׳קון!</Typography>
+                    <Typography variant="body2">כדי לצפות במשמרות ולבצע שינויים<br />יש להתחבר</Typography>
+                    <LoginButton />
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                        עדיין לא רשומים?{" "}
+                        <Link
+                            to={ROUTES.REGISTER}
+                            style={{ color: "#4B6B2A", textDecoration: "underline", fontWeight: 600 }}
+                        >
+                            הירשמו כאן
+                        </Link>
+                    </Typography>
                 </Box>
             </Container>
         </ThemeProvider>

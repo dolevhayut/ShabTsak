@@ -3,7 +3,7 @@ import { deleteGuard } from "@/services/guardService.js";
 import GuardType from "@/types/Guard.type.js";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import PropTypes from "prop-types";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
 
 export const GuardDialogDelete = ({ guard, closeDialog, open }) => {
   const queryClient = useQueryClient();
@@ -11,10 +11,10 @@ export const GuardDialogDelete = ({ guard, closeDialog, open }) => {
     mutationFn: () => deleteGuard(guard.id),
     onSuccess: async () => {
       await queryClient.invalidateQueries("GuardsPage");
-      toast.success("שומר נמחק בהצלחה!");
+      toast.success("החייל נמחק בהצלחה!");
       closeDialog();
     },
-    onError: () => toast.error("Failed to delete"),
+    onError: () => toast.error("שגיאה במחיקת החייל"),
   });
 
   return (
@@ -27,7 +27,7 @@ export const GuardDialogDelete = ({ guard, closeDialog, open }) => {
         }}
         sx={{ px: 2, py: 1 }}
       >
-        <DialogTitle id="alert-dialog-title">{`האם ברצונך למחוק את השומר ${guard.name}?`}</DialogTitle>
+        <DialogTitle id="alert-dialog-title">{`האם ברצונך למחוק את החייל ${guard.name}?`}</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
             פעולה זו אינה הפיכה ולא ניתן לשחזר אותה.

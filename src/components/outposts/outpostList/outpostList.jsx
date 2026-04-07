@@ -26,7 +26,7 @@ export default function OutpostList({ outposts = [] }) {
             <TableHead>
               <TableRow>
                 <TableCell align="center">שם</TableCell>
-                <TableCell align="center">מינימום שומרים</TableCell>
+                <TableCell align="center">מינימום חיילים</TableCell>
                 <TableCell align="center">רשימת משמרות</TableCell>
                 <TableCell align="center">פעולות</TableCell>
               </TableRow>

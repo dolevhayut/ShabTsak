@@ -17,25 +17,39 @@ const TermsPage = React.lazy(() => import("components/terms/termsPage") as any);
 const ShiftsPage = React.lazy(() => import("components/shifts/shiftsPage") as any);
 const GuardsPage = React.lazy(() => import("components/GuardsPage/GuardsPage") as any);
 const LandingPage = React.lazy(() => import("components/LandingPage/LandingPage"));
+const RegisterPage = React.lazy(() => import("components/RegisterPage/RegisterPage"));
+const MyShiftsPage = React.lazy(() => import("components/MyShiftsPage/MyShiftsPage") as any);
+const ShiftRequestsPage = React.lazy(() => import("components/ShiftRequestsPage/ShiftRequestsPage") as any);
+const CommanderAiPage = React.lazy(() => import("components/CommanderAiPage/CommanderAiPage") as any);
+const AnalyticsPage = React.lazy(() => import("components/AnalyticsPage/AnalyticsPage") as any);
 import { useAuthContext } from "@/context/AuthContext";
 
 export default function AppRoutes() {
     return (
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
                 <Route path={ROUTES.HOME} element={<Suspense><Layout/></Suspense>}>
                     <Route path={ROUTES.HOME} element={<PrivateRoute/>}>
                         <Route index element={<CampsPage/>}/>
                         <Route path={ROUTES.SCHEDULE} element={<ShiftSchedule/>}/>
+                        <Route path={ROUTES.MY_SHIFTS} element={<MyShiftsPage/>}/>
                         <Route path={`${ROUTES.OUTPOSTS}${ROUTES.CAMP}/:id/:name?`} element={<OutpostsPage/>}/>
                         <Route path={`${ROUTES.SHIFTS}${ROUTES.OUTPOST}/:id/:name?`} element={<ShiftsPage/>}/>
                         <Route path={ROUTES.GUARD_PROFILE} element={<GuardProfile/>}/>
                         <Route path={ROUTES.GUARDS} element={<GuardsPage/>}/>
+                        {/* אנליטיקס — קריאה בלבד, נגיש לכל משתמש מאומת
+                            תוכן רגיש מוסתר ב-UI עם useIsCommander() */}
+                        <Route path={ROUTES.ANALYTICS} element={<AnalyticsPage/>}/>
+                        <Route element={<CommanderRoute/>}>
+                            <Route path={ROUTES.SHIFT_REQUESTS} element={<ShiftRequestsPage/>}/>
+                            <Route path={ROUTES.COMMANDER_AI} element={<CommanderAiPage/>}/>
+                        </Route>
                     </Route>
                     <Route element={<Suspense><Outlet /></Suspense>}>
                         <Route path={ROUTES.PRIVACY} element={<PrivacyPage/>}/>
                         <Route path={ROUTES.TERMS} element={<TermsPage/>}/>
                         <Route path={ROUTES.LOGIN} element={<LoginPage/>}/>
+                        <Route path={ROUTES.REGISTER} element={<RegisterPage/>}/>
                         <Route path={ROUTES.LANDING} element={<LandingPage/>}/>
                         <Route path="*" element={<NotFound/>}/>
                     </Route>
@@ -55,6 +69,24 @@ function PrivateRoute() {
 
     if (user === null) {
         return <Navigate to={ROUTES.LANDING}/>
+    }
+
+    return <Suspense><Outlet/></Suspense>;
+}
+
+function CommanderRoute() {
+    const { user } = useAuthContext();
+
+    if (user === undefined) {
+        return null;
+    }
+
+    if (user === null) {
+        return <Navigate to={ROUTES.LANDING}/>;
+    }
+
+    if (user.role !== "commander") {
+        return <Navigate to={ROUTES.HOME}/>;
     }
 
     return <Suspense><Outlet/></Suspense>;

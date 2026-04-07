@@ -1,10 +1,9 @@
 import PropTypes from 'prop-types';
 import { useQueryClient } from 'react-query';
 import { useMemo } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
 import { Dialog, DialogTitle, DialogActions, Button } from "@mui/material";
-import { doApiMethod } from "@/services/apiService.ts";
-import { API_URL } from "@/constants/apiConstants";
+import { supabase } from "@/services/supabaseClient";
 import { getDayOfWeekHebrew } from "@/utils/dateUtils"
 
 DialogDelete.propTypes = {
@@ -14,31 +13,35 @@ DialogDelete.propTypes = {
     item: PropTypes.object
 }
 
+const tableMap = {
+    camp: "camps",
+    outpost: "outposts",
+    shift: "shifts",
+    guard: "guards",
+};
+
 function DialogDelete({ openDialog, setOpenDialog, subject, item }) {
-    // Access the client
     const queryClient = useQueryClient();
 
     const subjectHebrew = useMemo(() => {
         if (subject === "camp") return "בסיס";
         else if (subject === "outpost") return "עמדה";
         else if (subject === "shift") return "משמרת";
-        else if (subject === "guard") return "שומר";
+        else if (subject === "guard") return "חייל";
         else return subject; 
     }, [subject]);
 
 
     const doApiDelete = async () => {
-        let url = `${API_URL}/${subject}/${item.id}`
         try {
-            let resp = await doApiMethod(url, "DELETE");
-            if (resp.status === 200) {
-                toast.success(`${subjectHebrew}  ${subject === 'shift' ? `יום ${getDayOfWeekHebrew(item.dayId)}` : item.name} נמחקה בהצלחה`);
-                setOpenDialog(false);
-                // marked as outdated.
-                // The next time this query is requested, 
-                // the caching system will recognize it as outdated and fetch the data again
-                queryClient.invalidateQueries(`${subject}s`)
-            } else toast.error(resp.massege);
+            const { error } = await supabase
+                .from(tableMap[subject])
+                .delete()
+                .eq("id", item.id);
+            if (error) throw error;
+            toast.success(`${subjectHebrew}  ${subject === 'shift' ? `יום ${getDayOfWeekHebrew(item.dayId)}` : item.name} נמחקה בהצלחה`);
+            setOpenDialog(false);
+            queryClient.invalidateQueries(`${subject}s`)
         }
         catch (err) {
             console.log(err);

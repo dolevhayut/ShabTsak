@@ -1,54 +1,149 @@
 import PropTypes from "prop-types";
-import { Container, CssBaseline, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import {
+  Box,
+  CssBaseline,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import Guard from "@/components/GuardsPage/Guards/Guard/Guard";
+import GuardCard from "@/components/GuardsPage/Guards/Guard/GuardCard";
 import { useQuery } from "react-query";
 import { getGuardsByCampId } from "@/services/guardService";
 import LoadingComp from "@/components/general_comps/LoadingComp";
 
 const Guards = ({ campId, handleEdit, handleDelete }) => {
-  const {
-    data: guards,
-    isLoading,
-    isError,
-  } = useQuery({
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const { data: guards, isLoading, isError } = useQuery({
     enabled: !!campId,
     queryFn: () => getGuardsByCampId(campId),
     queryKey: ["GuardsPage", campId],
   });
 
-  if (isLoading) {
-    return <LoadingComp />;
-  }
+  if (isLoading) return <LoadingComp />;
 
   if (isError || !Array.isArray(guards) || guards.length === 0) {
-    return <Typography align="center">לא קיימים שומרים בבסיס זה</Typography>;
+    return (
+      <Box sx={{ mt: 6, textAlign: "center" }}>
+        <Typography variant="body1" color="text.secondary">
+          לא קיימים שומרים בבסיס זה
+        </Typography>
+      </Box>
+    );
   }
 
+  /* ─── Mobile: כרטיסים לאורך ─── */
+  if (isMobile) {
+    return (
+      <>
+        <CssBaseline />
+        <Stack spacing={1.5} sx={{ mt: 2 }}>
+          {guards.map((guard, index) => (
+            <GuardCard
+              key={guard.id}
+              index={index}
+              guard={guard}
+              campId={campId}
+              onEdit={() => handleEdit(guard)}
+              onDelete={() => handleDelete(guard)}
+            />
+          ))}
+        </Stack>
+      </>
+    );
+  }
+
+  /* ─── Desktop: טבלה ─── */
   return (
     <>
       <CssBaseline />
-      <Container maxWidth="md" sx={{ padding: 0 }}>
-        <Paper elevation={3} sx={{ marginTop: 2 }}>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell align="center">#</TableCell>
-                  <TableCell align="center">פרופיל</TableCell>
-                  <TableCell align="center">פרטים</TableCell>
-                  <TableCell align="center">שיבוץ אוטומטי</TableCell>
-                  <TableCell align="center">פעולות</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {guards.map((guard, index) => (
-                  <Guard key={guard.id} index={index} guard={guard} campId={campId} onEdit={() => handleEdit(guard)} onDelete={() => handleDelete(guard)} />
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </Container>
+      <Paper
+        elevation={0}
+        sx={{
+          mt: 2,
+          borderRadius: "10px",
+          border: "1px solid",
+          borderColor: "divider",
+          overflow: "hidden",
+        }}
+      >
+        <TableContainer>
+          <Table
+            sx={{
+              width: "100%",
+              tableLayout: "fixed",
+              "& th": {
+                fontWeight: 700,
+                fontSize: "0.8rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                color: "text.secondary",
+                bgcolor: "rgba(0,0,0,0.02)",
+                borderBottom: "2px solid",
+                borderColor: "divider",
+                textAlign: "right",
+                px: 2,
+                py: 1.5,
+              },
+              "& td": {
+                textAlign: "right",
+                verticalAlign: "middle",
+                borderColor: "divider",
+                px: 2,
+                py: 1.75,
+              },
+              "& tbody tr": {
+                transition: "background-color 0.15s ease",
+              },
+              "& tbody tr:hover": {
+                bgcolor: "rgba(75,107,42,0.03)",
+              },
+              "& tbody tr:last-child td": {
+                borderBottom: 0,
+              },
+            }}
+          >
+            <colgroup>
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "41%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "26%" }} />
+            </colgroup>
+            <TableHead>
+              <TableRow>
+                <TableCell>#</TableCell>
+                <TableCell>פרופיל</TableCell>
+                <TableCell>פרטים</TableCell>
+                <TableCell sx={{ textAlign: "center !important" }}>שיבוץ אוטומטי</TableCell>
+                <TableCell sx={{ textAlign: "center !important" }}>פעולות</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {guards.map((guard, index) => (
+                <Guard
+                  key={guard.id}
+                  index={index}
+                  guard={guard}
+                  campId={campId}
+                  onEdit={() => handleEdit(guard)}
+                  onDelete={() => handleDelete(guard)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
     </>
   );
 };

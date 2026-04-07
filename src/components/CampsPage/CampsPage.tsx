@@ -6,11 +6,11 @@ import CampList from "./campList/campList";
 import AddCampBtn from "./addCampBtn/addCampBtn";
 import LoadingComp from "../general_comps/LoadingComp.jsx";
 import { getCamps } from "@/services/campService.js";
+import { useIsCommander } from "@/hooks/useIsCommander";
 
 const CampsPage = () => {
   const [openDialog, setOpenDialog] = useState(false);
-
-  // const { isLoading, data: CampsPage } = useQuery('CampsPage', getCamps)
+  const isCommander = useIsCommander();
 
   const { isLoading, data: camps } = useQuery({
     queryFn: getCamps,
@@ -19,11 +19,10 @@ const CampsPage = () => {
 
   return (
     <div className="camps-page">
-      <Container fixed>
-        {/* btn-add camp */}
-        <AddCampBtn setOpenDialog={setOpenDialog} />
+      <Container maxWidth={false} disableGutters>
+        {isCommander && <AddCampBtn setOpenDialog={setOpenDialog} />}
 
-        <Typography variant="h3" component="h2" mb={2}>
+        <Typography variant="h2" component="h1" mb={3}>
           רשימת בסיסים
         </Typography>
 
@@ -34,10 +33,10 @@ const CampsPage = () => {
             אין בסיסים עדיין
           </Typography>
         ) : (
-          <CampList camps={camps} />
+          <CampList camps={(camps || []) as never[]} />
         )}
 
-        <CampDialog openDialog={openDialog} setOpenDialog={setOpenDialog} method="POST" />
+        {isCommander && <CampDialog openDialog={openDialog} setOpenDialog={setOpenDialog} method="POST" />}
       </Container>
     </div>
   );

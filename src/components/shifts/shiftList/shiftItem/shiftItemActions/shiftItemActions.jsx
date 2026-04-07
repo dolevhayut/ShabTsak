@@ -6,10 +6,14 @@ import DialogDelete from "../../../../general_comps/dialogs/dialogDelete";
 import EditIcon from "@mui/icons-material/Edit";
 import ShiftDialog from "../../../shiftDialog";
 import { ContentCopy } from "@mui/icons-material";
+import { useIsCommander } from "@/hooks/useIsCommander";
 
 export default function ShiftItemActions({ item, onDuplicateShift }) {
+    const isCommander = useIsCommander();
     const [openSureDialog, setOpenSureDialog] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
+
+    if (!isCommander) return null;
 
     return (
         <>

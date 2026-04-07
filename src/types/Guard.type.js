@@ -5,6 +5,7 @@ const GuardType = PropTypes.shape({
     id: PropTypes.number.isRequired,
     mail: PropTypes.string.isRequired,
     phone: PropTypes.string.isRequired,
+    color: PropTypes.string,
     shouldBeAllocated: PropTypes.bool.isRequired,
 })
 

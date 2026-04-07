@@ -10,7 +10,7 @@ export default function PrivacyHeader() {
            </Typography>
            <Box>
                <Typography variant="body1" gutterBottom>
-                   This privacy notice for Shabtsak ("we," "us," or "our"), describes how and why we might collect, store, use, and/or share
+                   This privacy notice for Shabtzakon ("we," "us," or "our"), describes how and why we might collect, store, use, and/or share
                    ("process") your information when you use our services ("Services"), such as when you:
                </Typography>
                <ul style={{paddingLeft: '1rem'}}>

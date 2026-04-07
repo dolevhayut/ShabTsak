@@ -4,7 +4,7 @@ import { defaultValues } from "components/GuardsPage/Guards/Guard/GuardDialogAdd
 import { yupResolver } from "@hookform/resolvers/yup";
 import { schema } from "components/GuardsPage/Guards/Guard/GuardDialogAddOrEdit/schema.js";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Checkbox, FormControlLabel, Typography } from "@mui/material";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
 import {useMutation, useQueryClient} from "react-query";
 import { addNewGuard, updateGuard } from "@/services/guardService.js";
 
@@ -31,10 +31,10 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
       if (data.id) {
         await queryClient.setQueryData(["guard", data?.id], data);
       }
-      toast.success("שומר נערך בהצלחה!");
+      toast.success("פרטי החייל נשמרו בהצלחה!");
       handleCloseDialog();
     },
-    onError: () => toast.error("Failed to delete"),
+    onError: () => toast.error("שגיאה בשמירת פרטי החייל"),
   });
 
   // const submit = async (formData) => {
@@ -44,11 +44,11 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
   //     if (isEditing) {
   //       // Call updateGuard if it's an edit operation
   //       await updateGuard(formData);
-  //       toast.success("שומר נערך בהצלחה!");
+  //       toast.success("חייל נערך בהצלחה!");
   //     } else {
   //       // Call addNewGuard if it's an add operation
   //       await addNewGuard(formData);
-  //       toast.success("שומר נוסף בהצלחה!");
+  //       toast.success("חייל נוסף בהצלחה!");
   //     }
   //
   //     // Invalidate and refetch guard-related queries to update the UI
@@ -70,12 +70,21 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
   return (
     <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth="sm">
       <Box component="form" onSubmit={handleSubmit(submit)} sx={{ px: 2, py: 1 }} noValidate>
-        <DialogTitle>{isEditing ? "ערוך שומר" : "הוסף שומר"}</DialogTitle>
+        <DialogTitle>{isEditing ? "ערוך חייל" : "הוסף חייל"}</DialogTitle>
         <DialogContent>
-          <DialogContentText>{isEditing ? "ערוך את פרטי השומר :" : "הזן את פרטי השומר :"}</DialogContentText>
+          <DialogContentText>{isEditing ? "ערוך את פרטי החייל:" : "הזן את פרטי החייל:"}</DialogContentText>
           <TextField autoFocus margin="dense" label="שם" type="text" fullWidth autoComplete="name" InputProps={{ inputProps: { maxLength: 50 } }} {...register("name")} helperText={<FormError error={formState.errors?.name?.message} />} />
           <TextField margin="dense" label="אימייל" type="email" fullWidth autoComplete="email" {...register("mail")} helperText={<FormError error={formState.errors?.mail?.message} />} />
           <TextField margin="dense" label="טלפון" type="tel" fullWidth autoComplete="tel" {...register("phone")} helperText={<FormError error={formState.errors?.phone?.message} />} />
+          <TextField
+            margin="dense"
+            label="צבע חייל"
+            type="color"
+            fullWidth
+            defaultValue="#4B6B2A"
+            {...register("color")}
+            helperText={<FormError error={formState.errors?.color?.message} />}
+          />
           <FormControlLabel
             control={
               <Controller

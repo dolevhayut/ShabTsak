@@ -5,15 +5,18 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from "@mui/icons-material/Edit";
 import DialogDelete from "../../../../general_comps/dialogs/dialogDelete";
 import DialogCamp from '../../../campDialog';
+import { useIsCommander } from "@/hooks/useIsCommander";
 
 const CampItemActions = ({ item }) => {
+    const isCommander = useIsCommander();
     const [openSureDialog, setOpenSureDialog] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
+
+    if (!isCommander) return null;
 
     return (
         <>
             <IconButton
-                // sx={{ marginRight: "8px" }}
                 onClick={() => {
                     setOpenDialog(true);
                 }}
@@ -37,8 +40,6 @@ const CampItemActions = ({ item }) => {
                 setOpenDialog={setOpenSureDialog} subject={"camp"}
                 item={item}
             />
-
-
         </>
     )
 }

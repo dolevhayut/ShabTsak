@@ -265,7 +265,7 @@ export default function PrivacyContent() {
                     If you have questions or comments about this notice, you may email us at <PrivacyContactLink/>.
                     {/*
                             or contact us by post at:
-                            Shabtsak
+                            Shabtzakon
                             __________
                             __________
                             Israel

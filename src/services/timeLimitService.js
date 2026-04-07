@@ -1,38 +1,52 @@
-import { doApiGet, doApiMethod } from "@/services/apiService.ts";
-import { GUARD_TIMELIMIT_URL } from "@/constants/apiConstants.js";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
+import { supabase } from "./supabaseClient";
+import { getCredentials } from "./authCredentials";
 
 export const deleteTimeLimit = async (timeLimitId) => {
-  try {
-    let resp = await doApiMethod(`${GUARD_TIMELIMIT_URL}/${timeLimitId}`, "DELETE");
-    if (resp.status === 200) {
-      toast.success(`מחיקת הגבלה בוצעה בהצלחה`);
-    } else toast.error(resp.message);
-  } catch (err) {
-    console.log(err);
-    toast.error("יש בעיה במחיקה נסה מאוחר יותר");
-  }
+    try {
+        const creds = getCredentials();
+        const { error } = await supabase.rpc("rpc_delete_time_limit", {
+            ...creds,
+            p_limit_id: timeLimitId,
+        });
+        if (error) throw error;
+        toast.success("מחיקת הגבלה בוצעה בהצלחה");
+    } catch (err) {
+        console.log(err);
+        toast.error("יש בעיה במחיקה נסה מאוחר יותר");
+    }
 };
 
 export const createTimeLimit = async (timeLimit) => {
-  try {
-    let resp = await doApiMethod(GUARD_TIMELIMIT_URL, "POST", timeLimit);
-    if (resp.status === 201) toast.success("הגבלת זמן נוספה בהצלחה!");
-    return resp;
-  } catch (err) {
-    console.error(`An error occurred`, err);
-    toast.error("יש בעיה, בבקשה נסה מאוחר יותר");
-    throw err;
-  }
+    try {
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_create_time_limit", {
+            ...creds,
+            p_guard_id: timeLimit.guardId,
+            p_day_id: timeLimit.dayId,
+            p_from_hour: timeLimit.fromHour,
+            p_to_hour: timeLimit.toHour,
+        });
+        if (error) throw error;
+        toast.success("הגבלת זמן נוספה בהצלחה!");
+        return { data: { id: data }, status: 201 };
+    } catch (err) {
+        console.error("An error occurred", err);
+        toast.error("יש בעיה, בבקשה נסה מאוחר יותר");
+        throw err;
+    }
 };
 
-export const getGuardTimeLimits = (guardId) => {
-  return doApiGet(`${GUARD_TIMELIMIT_URL}/guard/${guardId}`)
-    .then((res) => {
-      return res.data;
-    })
-    .catch((error) => {
-      console.log(error);
-      toast.error("Failed to fetch guard details. Please try again.");
-    });
+export const getGuardTimeLimits = async (guardId) => {
+    try {
+        const { data, error } = await supabase
+            .from("guard_time_limits")
+            .select("*")
+            .eq("guardId", guardId);
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.log(error);
+        toast.error("נכשל בטעינת מגבלות הזמן של החייל");
+    }
 };

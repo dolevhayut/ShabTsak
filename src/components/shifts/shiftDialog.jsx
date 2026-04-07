@@ -17,7 +17,7 @@ import {
     Stack,
 } from "@mui/material";
 import { theme } from "@/theme/theme";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
 import {
     createOrUpdateShift, deleteShift,
     getShiftsByOutpostId,

@@ -4,18 +4,91 @@ import { Link as RouterLink } from 'react-router-dom';
 
 export default function Footer() {
   return (
-      <Container sx={{ mt: 'auto' }}>
-          <Stack sx={{ pb: 0.5, pt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} direction={{ sm: "row" }} paddingX={2}>
-              <Box component="nav">
-                  <Button component={RouterLink} variant="link" to={ROUTES.HOME}>עמוד הבית</Button>
-                  <Button component={RouterLink} variant="link" to={ROUTES.PRIVACY}>פרטיות</Button>
-                  <Button component={RouterLink} variant="link" to={ROUTES.TERMS}>תנאי שימוש</Button>
-              </Box>
-              <Box textAlign="center">
-                  <Typography variant="body2" gutterBottom={false}>2023 Chaya & Dan & Hadas & Niv & Ofir  ©</Typography>
-                  <Typography variant="body2" gutterBottom={false}>Powered By <a href="https://mobiscroll.com/">Mobiscroll</a></Typography>
-              </Box>
-          </Stack>
+    <Box
+      component="footer"
+      sx={{
+        mt: "auto",
+        borderTop: "1px solid #E8E8ED",
+      }}
+    >
+      <Container maxWidth="lg">
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems="center"
+          gap={1}
+          sx={{ py: "20px", px: 2 }}
+        >
+          <Box component="nav" sx={{ display: "flex", gap: 0.5 }}>
+            <Button
+              component={RouterLink}
+              to={ROUTES.HOME}
+              sx={{
+                color: "#6E6E73",
+                fontSize: "0.8125rem",
+                fontWeight: 400,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: "8px",
+                "&:hover": { color: "#4B6B2A", background: "rgba(75,107,42,0.05)" },
+              }}
+            >
+              עמוד הבית
+            </Button>
+            <Button
+              component={RouterLink}
+              to={ROUTES.PRIVACY}
+              sx={{
+                color: "#6E6E73",
+                fontSize: "0.8125rem",
+                fontWeight: 400,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: "8px",
+                "&:hover": { color: "#4B6B2A", background: "rgba(75,107,42,0.05)" },
+              }}
+            >
+              פרטיות
+            </Button>
+            <Button
+              component={RouterLink}
+              to={ROUTES.TERMS}
+              sx={{
+                color: "#6E6E73",
+                fontSize: "0.8125rem",
+                fontWeight: 400,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: "8px",
+                "&:hover": { color: "#4B6B2A", background: "rgba(75,107,42,0.05)" },
+              }}
+            >
+              תנאי שימוש
+            </Button>
+          </Box>
+
+          <Box sx={{ textAlign: { xs: "center", sm: "start" } }}>
+            <Typography
+              variant="body2"
+              sx={{ color: "#AEAEB2", fontSize: "0.8125rem", lineHeight: 1.5 }}
+            >
+              © שבצ׳׳קון
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "#AEAEB2", fontSize: "0.8125rem", lineHeight: 1.5 }}
+            >
+              נוצר על ידי בולדוג פתרונות מדיה
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "#AEAEB2", fontSize: "0.8125rem", lineHeight: 1.5 }}
+            >
+              Powered By React Big Calendar
+            </Typography>
+          </Box>
+        </Stack>
       </Container>
-  )
+    </Box>
+  );
 }

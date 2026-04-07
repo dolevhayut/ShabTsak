@@ -1,41 +1,65 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import "@mobiscroll/react/dist/css/mobiscroll.min.css";
-import { Eventcalendar, setOptions, Popup, Button, Select, formatDate, localeHe, Datepicker } from "@mobiscroll/react";
+import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import he from "date-fns/locale/he";
 import { getOutpostsAndShiftsForCampId } from "@/services/outpostService.js";
 import { createOrUpdateShibuts, getShibutsimOfCurrentMonthByCampId, deleteShibuts, getAutoShibutsimByCampIdAndDates, deleteAutoShibutsim } from "@/services/shibutsService.js";
 import { useQuery } from "react-query";
 import SelectCamp from "components/general_comps/SelectCamp.jsx";
 import { getTimeStr, getDayStr, getDayNumber, getHourNumber, getDateAndTime } from "../../utils/dateUtils";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
 import LoadingComp from "../general_comps/LoadingComp.jsx";
 import { getGuardsAndLimitsForCampId } from "@/services/guardService.js";
 import AddToCalendar from "./AddToCalendar";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  TextField,
+  Box,
+  Typography,
+  Checkbox,
+  ListItemText,
+} from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
+import { useAuthContext } from "@/context/AuthContext";
+import { useIsCommander } from "@/hooks/useIsCommander";
 
-setOptions({
-  locale: localeHe,
-  theme: "ios",
-  themeVariant: "light",
+const locales = { he: he };
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
+  getDay,
+  locales,
 });
-
-const responsivePopup = {
-  medium: {
-    display: "center",
-    width: 400,
-    fullScreen: false,
-    touchUi: false,
-    showOverlay: false,
+const lrm = "\u200E";
+const rtlFormats = {
+  eventTimeRangeFormat: ({ start, end }, culture, currentLocalizer) => {
+    const startStr = currentLocalizer.format(start, "HH:mm", culture);
+    const endStr = currentLocalizer.format(end, "HH:mm", culture);
+    return `${lrm}${startStr}${lrm} - ${lrm}${endStr}${lrm}`;
   },
 };
 
 function useLoading() {
   const [isLoading, setLoading] = useState(false);
 
-  // Function to wrap around API calls and manage loading state
   const withLoading = async (apiCall) => {
     setLoading(true);
     try {
       const response = await apiCall();
-      return response; // Return API response
+      return response;
     } finally {
       setLoading(false);
     }
@@ -45,31 +69,26 @@ function useLoading() {
 }
 
 function ShiftSchedule() {
-  const [headerText, setHeader] = useState("");
+  const { user } = useAuthContext();
+  const isCommander = useIsCommander();
+  const [dialogDetails, setDialogDetails] = useState({
+    shiftName: "",
+    guardName: "",
+    dateText: "",
+  });
   const [isEdit, setEdit] = useState(false);
   const [tempShibuts, setTempShibuts] = useState(null);
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [campId, setCampId] = useState(null);
-  const [autoShibutsDates, setAutoShibutsDates] = useState(null);
+  const [autoShibutsStartDate, setAutoShibutsStartDate] = useState(null);
+  const [autoShibutsEndDate, setAutoShibutsEndDate] = useState(null);
   const [isLoading, withLoading] = useLoading();
   const [shibutsim, setShibutsim] = useState([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedOutpostIds, setSelectedOutpostIds] = useState(null);
 
-  const colors = useMemo(() => {
-    return ["red", "green", "blue", "yellow", "orange", "purple", "navy", "maroon", "olive", "silver"];
-  }, []);
-
-  const shiftsCssClasses = useMemo(() => {
-    return ["md-g-stripes-bg", "md-r-stripes-bg", "md-y-stripes-bg"];
-  }, []);
-
-  const view = useMemo(() => {
-    return {
-      timeline: {
-        type: "day",
-        startDay: 0,
-        endDay: 7,
-      },
-    };
+  const fallbackColors = useMemo(() => {
+    return ["#4B6B2A", "#16A34A", "#DC2626", "#D97706", "#7C3AED", "#0891B2", "#BE185D", "#4F46E5"];
   }, []);
 
   const { isLoading: guardsLoading, data: guards } = useQuery({
@@ -84,106 +103,171 @@ function ShiftSchedule() {
           text: g.guard.name,
           guardPhone: g.guard.phone,
           guardMail: g.guard.mail,
-          color: colors[g.guard.id % 10],
+          color: g.guard.color || fallbackColors[g.guard.id % fallbackColors.length],
           outpostLimits: g.outpostLimits,
           timeLimits: g.timeLimits,
+          dayLimits: g.dayLimits || [],
+          peerExclusions: g.peerExclusions || [],
+          excludedByPeerIds: g.excludedByPeerIds || [],
         }));
       }
-      console.log("GuardsPage", mappedGuards);
       return mappedGuards;
     },
   });
 
-  const { isLoading: outpostsLoading, data: outposts } = useQuery({
+  const { isLoading: outpostsLoading, data: outpostsAndShifts = [] } = useQuery({
     queryKey: ["outpostsAndShifts", campId],
     queryFn: () => getOutpostsAndShiftsForCampId(campId),
     enabled: !!campId,
-    select: (data) => {
-      return data.map((o) => o.outpost);
-    },
   });
 
-  const { isLoading: shiftsLoading, data: shifts } = useQuery({
-    queryKey: ["outpostsAndShifts", campId],
-    enabled: false,
-    select: (data) => {
-      const allMappendShifts = [];
-      if (data.length > 0) {
-        data.forEach(({ shifts }) => {
-          if (shifts.length > 0) {
-            const mappedShifts = shifts.map((s, index) => ({
-              id: s.id,
-              start: getTimeStr(s.fromHour),
-              end: getTimeStr(s.toHour),
-              resource: s.outpostId,
-              recurring: {
-                repeat: "weekly",
-                weekDays: getDayStr(s.dayId),
-              },
-              cssClass: shiftsCssClasses[index % 3],
-            }));
-            allMappendShifts.push(...mappedShifts);
-          }
-        });
-      }
-      return allMappendShifts;
-    },
-  });
+  const shiftsLoading = false;
+
+  const outposts = useMemo(() => {
+    return outpostsAndShifts.map(({ shifts: _shifts, ...outpost }) => outpost);
+  }, [outpostsAndShifts]);
+
+  const shifts = useMemo(() => {
+    const allMappendShifts = [];
+    if (outpostsAndShifts.length > 0) {
+      outpostsAndShifts.forEach((outpost) => {
+        if (outpost.shifts?.length > 0) {
+          const mappedShifts = outpost.shifts.map((s) => ({
+            id: s.id,
+            start: getTimeStr(s.fromHour),
+            end: getTimeStr(s.toHour),
+            resource: s.outpostId,
+            dayStr: getDayStr(s.dayId),
+          }));
+          allMappendShifts.push(...mappedShifts);
+        }
+      });
+    }
+    return allMappendShifts;
+  }, [outpostsAndShifts]);
 
   useEffect(() => {
-    if (campId) {
+    if (selectedOutpostIds !== null) return;
+    if (!outposts.length) return;
+    setSelectedOutpostIds(outposts.map((o) => o.id));
+  }, [outposts, selectedOutpostIds]);
+
+  useEffect(() => {
+    // Wait for shifts + guards before mapping shibuts, otherwise events
+    // fall back to 00:00 and render in the all-day lane.
+    if (campId && shifts?.length > 0 && guards?.length > 0) {
       fetchShibutsim();
     }
-  }, [campId]);
+  }, [campId, shifts, guards]);
 
   async function fetchShibutsim() {
     let shibutsimData = await getShibutsimOfCurrentMonthByCampId(campId, null);
-    if(shibutsimData){
+    if (shibutsimData) {
       setShibutsim(mapShibutsim(shibutsimData));
     }
   }
 
-  const mapShibutsim = useCallback( (shibutsim) => {
-    return shibutsim.map((s) => {
-      const { id, ...copiedShibuts } = s;
-      const shift = shifts?.find((sh) => sh.id == s.shiftId);
-      const guard = guards?.find((g) => g.value == s.guardId);
-      const updatedShibuts = {
-        ...copiedShibuts,
-        shibutsId: id,
-        start: getDateAndTime(s.theDate, shift?.start),
-        end: getDateAndTime(s.theDate, shift?.end, true),
-        guardName: guard?.text,
-        resource: s.outpostId,
-        color: guard?.color,
-      };
-      return updatedShibuts;
-    });
-  });
+  const mapShibutsim = useCallback(
+    (shibutsim) => {
+      return shibutsim.map((s) => {
+        const { id, ...copiedShibuts } = s;
+        const shift = shifts?.find((sh) => sh.id == s.shiftId);
+        const guard = guards?.find((g) => g.value == s.guardId);
+        const start = getDateAndTime(s.theDate, shift?.start);
+        const end = getDateAndTime(s.theDate, shift?.end, true);
+        if (end <= start) {
+          end.setDate(end.getDate() + 1);
+        }
+        const updatedShibuts = {
+          ...copiedShibuts,
+          shibutsId: id,
+          start,
+          end,
+          guardName: guard?.text,
+          resource: s.outpostId,
+          resourceId: s.outpostId,
+          color: guard?.color,
+          title: guard?.text || "",
+        };
+        return updatedShibuts;
+      });
+    },
+    [shifts, guards]
+  );
 
   const findClosestShift = useCallback(
     (outpost, start) => {
-      let shift = shifts.filter((s) => s.resource == outpost && getDayNumber(s.recurring.weekDays) == start.getDay() && getHourNumber(s.start) <= new Date(start).getHours() && getHourNumber(s.end, true) >= new Date(start).getHours());
+      const clickedHour = new Date(start).getHours();
+      let shift = shifts.filter((s) => {
+        if (s.resource != outpost) return false;
+        if (getDayNumber(s.dayStr) != start.getDay()) return false;
+        const shiftStart = getHourNumber(s.start);
+        const shiftEnd = getHourNumber(s.end, true);
+        if (shiftEnd > shiftStart) {
+          return shiftStart <= clickedHour && shiftEnd >= clickedHour;
+        }
+        return clickedHour >= shiftStart || clickedHour < shiftEnd;
+      });
       if (shift.length > 1) {
-        return shift.reduce((prev, current) => (prev && getHourNumber(prev.start) > getHourNumber(current.start) ? prev : current));
+        return shift.reduce((prev, current) =>
+          prev && getHourNumber(prev.start) > getHourNumber(current.start) ? prev : current
+        );
       }
       return shift[0];
     },
     [shifts]
   );
 
+  const checkDayLimit = useCallback((guard, shibuts) => {
+    if (!guard.dayLimits?.length) return false;
+    const day = shibuts.start.getDay();
+    return guard.dayLimits.some((d) => d.dayId === day);
+  }, []);
+
   const checkTimeLimit = useCallback((guard, shibuts) => {
     let hasTimeLimit = false;
     const shibutsStart = shibuts.start.getHours();
     const shibutsEnd = shibuts.end.getHours();
     if (guard.timeLimits.length > 0) {
-      const limits = guard.timeLimits.filter((t) => t.dayId == shibuts.start.getDay() && !((t.fromHour <= shibutsStart && t.toHour <= shibutsStart) || (t.fromHour >= shibutsEnd && t.toHour >= shibutsEnd)));
+      const limits = guard.timeLimits.filter(
+        (t) =>
+          t.dayId == shibuts.start.getDay() &&
+          !((t.fromHour <= shibutsStart && t.toHour <= shibutsStart) || (t.fromHour >= shibutsEnd && t.toHour >= shibutsEnd))
+      );
       if (limits.length > 0) {
         hasTimeLimit = true;
       }
     }
     return hasTimeLimit;
   }, []);
+
+  const checkPeerConflict = useCallback(
+    (guard, shibuts) => {
+      const excl = guard.peerExclusions || [];
+      const excludedBy = guard.excludedByPeerIds || [];
+      if (excl.length === 0 && excludedBy.length === 0) return false;
+      const slotDate =
+        shibuts.theDate !== undefined && shibuts.theDate !== null ? shibuts.theDate : shibuts.start?.getTime?.();
+      if (slotDate == null || shibuts.shiftId == null) return false;
+
+      const others = shibutsim.filter(
+        (s) =>
+          s.shiftId === shibuts.shiftId &&
+          s.outpostId === shibuts.outpostId &&
+          Number(s.theDate) === Number(slotDate) &&
+          s.guardId &&
+          s.shibutsId !== shibuts.shibutsId
+      );
+
+      for (const o of others) {
+        const oid = o.guardId;
+        if (excl.some((e) => e.excludedGuardId === oid)) return true;
+        if (excludedBy.includes(oid)) return true;
+      }
+      return false;
+    },
+    [shibutsim]
+  );
 
   const checkOutpostLimit = useCallback((guard, shibuts) => {
     let hasOutpostLimit = false;
@@ -199,29 +283,42 @@ function ShiftSchedule() {
   const checkGuardHasLimits = useCallback(
     (guard, shibuts) => {
       let hasLimits = false;
+      if (checkDayLimit(guard, shibuts)) {
+        toast.error("חייל " + guard.text + " אינו יכול לבצע משמרת ביום זה (מגבלת יום מלא)");
+        hasLimits = true;
+      }
       const hasTimeLimit = checkTimeLimit(guard, shibuts);
       const hasOutpostLimit = checkOutpostLimit(guard, shibuts);
       if (hasTimeLimit) {
-        toast.error("שומר " + guard.text + " אינו יכול לשמור בשעות אלו");
+        toast.error("חייל " + guard.text + " אינו יכול לבצע משמרת בשעות אלו");
         hasLimits = true;
       }
       if (hasOutpostLimit) {
-        const outpost = outposts.find((o) => {
-          return o.id === shibuts.outpostId;
-        });
-        toast.error("שומר " + guard.text + " לא יכול לשמור בעמדה " + outpost.name);
+        const outpost = outposts.find((o) => o.id === shibuts.outpostId);
+        toast.error("חייל " + guard.text + " אינו יכול לבצע משמרת בעמדה " + outpost.name);
+        hasLimits = true;
+      }
+      if (checkPeerConflict(guard, shibuts)) {
+        toast.error(
+          "חייל " + guard.text + " לא ניתן לשבץ באותה משמרת עם שומר אחר שסומנתה מולו הגבלה (סיכסוך / לא לשמור יחד)"
+        );
         hasLimits = true;
       }
       return hasLimits;
     },
-    [checkOutpostLimit, checkTimeLimit, outposts]
+    [checkDayLimit, checkOutpostLimit, checkPeerConflict, checkTimeLimit, outposts]
   );
 
   const checkExistinShibuts = useCallback(
     (shibuts) => {
-      const existShibuts = shibutsim.filter((s) => s.guardId == shibuts.guardId && s.shiftId == shibuts.shiftId && s.outpostId == shibuts.outpostId && s.start.getTime() == shibuts.start.getTime());
+      const existShibuts = shibutsim.filter(
+        (s) =>
+          s.guardId == shibuts.guardId &&
+          s.shiftId == shibuts.shiftId &&
+          s.outpostId == shibuts.outpostId &&
+          s.start.getTime() == shibuts.start.getTime()
+      );
       if (existShibuts.length > 0) {
-        //same shibuts
         if (shibuts.shibutsId != undefined && shibuts.shibutsId == existShibuts[0].shibutsId) {
           return true;
         }
@@ -235,44 +332,23 @@ function ShiftSchedule() {
   );
 
   const onClose = useCallback(() => {
-    if (!isEdit) {
-      // refresh the list, if add popup was canceled, to remove the temporary event
-      setShibutsim([...shibutsim]);
-    }
     setPopupOpen(false);
-  }, [isEdit, shibutsim]);
-
-  const myDefaultShibuts = useCallback(
-    (args) => {
-      const shift = findClosestShift(args.resource, args.start);
-      if (shift != undefined) {
-        const start = new Date(args.start.setHours(getHourNumber(shift.start)));
-        const end = new Date(args.start.setHours(getHourNumber(shift.end, true)));
-        setEdit(false);
-        return {
-          start: start,
-          end: end,
-          guardName: "",
-          guardId: "",
-          shiftId: shift.id,
-          outpostId: args.resource,
-          resource: args.resource,
-          campId: campId,
-          color: "#ff0000",
-        };
-      }
-    },
-    [findClosestShift, shibutsim]
-  );
+  }, []);
 
   const onShibutsClick = useCallback(
-    (args) => {
-      const shibuts = args.event;
-      const outpost = outposts.find((o) => {
-        return o.id === shibuts.resource;
-      });
+    (event) => {
+      const shibuts = {
+        ...event,
+        start: event.originalStart || event.start,
+        end: event.originalEnd || event.end,
+      };
+      const outpost = outposts.find((o) => o.id === shibuts.resource);
       shibuts.outpostId = shibuts.resource;
-      setHeader("<div>שינוי שומר  " + shibuts.guardName + " בעמדה " + outpost.name + '</div><div class="employee-shifts-day">' + formatDate("HH:mm", new Date(shibuts.start)) + " עד " + formatDate("HH:mm", new Date(shibuts.end)) + "</div>");
+      setDialogDetails({
+        shiftName: `${outpost?.name || ""} | ${format(new Date(shibuts.start), "HH:mm")} - ${format(new Date(shibuts.end), "HH:mm")}`,
+        guardName: shibuts.guardName || "לא נבחר",
+        dateText: format(new Date(shibuts.start), "dd/MM/yyyy"),
+      });
       setEdit(true);
       setTempShibuts({ ...shibuts });
       setPopupOpen(true);
@@ -281,29 +357,10 @@ function ShiftSchedule() {
   );
 
   const onDeleteClick = useCallback(async () => {
-    await withLoading(()=>deleteShibuts(tempShibuts.shibutsId));
+    await withLoading(() => deleteShibuts(tempShibuts.shibutsId));
     setShibutsim(shibutsim.filter((shibuts) => shibuts.shibutsId !== tempShibuts.shibutsId));
     setPopupOpen(false);
-  }, [tempShibuts]);
-
-  const onShibutsCreate = useCallback(
-    (args) => {
-      const shibuts = args.event;
-      if (shibuts.shiftId == undefined) {
-        toast.error("אין משמרות בזמן זה");
-        return false;
-      } else {
-        const outpost = outposts.find((o) => {
-          return o.id === shibuts.resource;
-        });
-        shibuts.outpostId = outpost.id;
-        setHeader("<div>משמרת חדשה בעמדה " + outpost.name + '</div><div class="employee-shifts-day">' + formatDate("HH:mm", shibuts.start) + " עד " + formatDate("HH:mm", shibuts.end) + "</div>");
-        setTempShibuts(shibuts);
-        setPopupOpen(true);
-      }
-    },
-    [outposts, shibutsim]
-  );
+  }, [tempShibuts, shibutsim]);
 
   const saveShibuts = useCallback(
     async (shibutsToSave) => {
@@ -312,15 +369,13 @@ function ShiftSchedule() {
       shibutsToSave.theDate = shibutsToSave.start.getTime();
       shibutsToSave.outpostName = outpostName;
       shibutsToSave.id = shibutsToSave.shibutsId;
-      await withLoading(()=>createOrUpdateShibuts(shibutsToSave));
+      await withLoading(() => createOrUpdateShibuts(shibutsToSave));
       if (shibutsToSave.shibutsId != null) {
-        // update the shibuts in the list
         const index = shibutsim.findIndex((s) => s.shibutsId === shibutsToSave.shibutsId);
         const newShibutsimList = [...shibutsim];
         newShibutsimList.splice(index, 1, shibutsToSave);
         setShibutsim(newShibutsimList);
       } else {
-        // add the new shibuts to the list
         setShibutsim([...shibutsim, shibutsToSave]);
       }
       setPopupOpen(false);
@@ -333,149 +388,396 @@ function ShiftSchedule() {
       const isExistingShibuts = checkExistinShibuts(shibutsToSave);
       if (shibutsToSave.guardId != 0 && !isExistingShibuts) {
         saveShibuts(shibutsToSave);
-      } else {
-        return false;
       }
     },
     [checkExistinShibuts, saveShibuts]
   );
 
-  const onShibutsMove = useCallback(
-    (obj) => {
-      let shibuts = { ...obj.event };
-      let shift = findClosestShift(shibuts.resource, shibuts.start);
-      if (shift !== undefined) {
-        const guard = guards.find((g) => g.value == shibuts.guardId);
-        const guardHasLimits = checkGuardHasLimits(guard, shibuts);
-        if (guardHasLimits) return false;
-        shibuts.start.setHours(getHourNumber(shift.start), 0, 0);
-        shibuts.end.setHours(getHourNumber(shift.end), 0, 0);
-        shibuts.outpostId = shibuts.resource;
-        shibuts.shiftId = shift.id;
-        setTempShibuts(shibuts);
-        return checkAnsSaveShibuts(shibuts);
+  const handleSelectSlot = useCallback(
+    (slotInfo) => {
+      if (!outposts || !shifts) return;
+      // slotInfo has start, end, resourceId
+      const resourceId = slotInfo.resourceId;
+      const shift = findClosestShift(resourceId, slotInfo.start);
+      if (shift != undefined) {
+        const start = new Date(slotInfo.start);
+        start.setHours(getHourNumber(shift.start), 0, 0);
+        const end = new Date(slotInfo.start);
+        end.setHours(getHourNumber(shift.end, true), 0, 0);
+        if (end <= start) {
+          end.setDate(end.getDate() + 1);
+        }
+        const outpost = outposts.find((o) => o.id === resourceId);
+        setEdit(false);
+        const newShibuts = {
+          start,
+          end,
+          theDate: start.getTime(),
+          guardName: "",
+          guardId: "",
+          shiftId: shift.id,
+          outpostId: resourceId,
+          resource: resourceId,
+          campId: campId,
+          color: "#ff0000",
+          title: "",
+        };
+        setDialogDetails({
+          shiftName: `${outpost?.name || ""} | ${format(start, "HH:mm")} - ${format(end, "HH:mm")}`,
+          guardName: "לא נבחר עדיין",
+          dateText: format(start, "dd/MM/yyyy"),
+        });
+        setTempShibuts(newShibuts);
+        setPopupOpen(true);
       } else {
-        toast.error("אין משמרות בזמן זה בעמדה זו");
-        return false;
+        toast.error("אין משמרות בזמן זה");
       }
     },
-    [findClosestShift, checkGuardHasLimits, checkAnsSaveShibuts, guards]
+    [outposts, shifts, findClosestShift, campId]
   );
 
-  const popupButtons = useMemo(() => {
-    if (isEdit) {
-      return [
-        "cancel",
-        {
-          handler: () => {
-            checkAnsSaveShibuts(tempShibuts);
-          },
-          keyCode: "enter",
-          text: "שמירה",
-          cssClass: "mbsc-popup-button-primary",
-        },
-      ];
-    } else {
-      return [
-        "cancel",
-        {
-          handler: () => {
-            checkAnsSaveShibuts(tempShibuts);
-          },
-          keyCode: "enter",
-          text: "הוספה",
-          cssClass: "mbsc-popup-button-primary",
-        },
-      ];
-    }
-  }, [tempShibuts]);
-
-  const myCustomShibuts = useCallback((args) => {
-    return (
-      <div>
-        <div className="md-timetable-event-title">{args.original.guardName}</div>
-      </div>
-    );
-  }, []);
-
   const onGuardChange = useCallback(
-    (selectedGuard) => {
-      const guard = guards.find((g) => g.value == selectedGuard.value);
-      if (!checkGuardHasLimits(guard, tempShibuts)) {
+    (e) => {
+      const selectedValue = e.target.value;
+      const guard = guards.find((g) => g.value == selectedValue);
+      if (guard && !checkGuardHasLimits(guard, tempShibuts)) {
         setTempShibuts({
           ...tempShibuts,
-          guardName: selectedGuard.valueText,
-          guardId: selectedGuard.value,
-          color: guards.find((g) => g.value === selectedGuard.value).color,
+          guardName: guard.text,
+          guardId: guard.value,
+          color: guard.color,
+          title: guard.text,
         });
       }
     },
     [tempShibuts, guards, checkGuardHasLimits]
   );
 
-  const onAutoShibutsClick = useCallback( async () => {
-    if(autoShibutsDates){
-      let newShibutsim = await withLoading(()=>getAutoShibutsimByCampIdAndDates(campId, autoShibutsDates));
+  const onCommanderMoveDate = useCallback(
+    (value) => {
+      if (!value || !tempShibuts) return;
+      const nextDate = value.toDate();
+      const start = new Date(tempShibuts.start);
+      const end = new Date(tempShibuts.end);
+      start.setFullYear(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate());
+      end.setFullYear(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate());
+      if (end <= start) {
+        end.setDate(end.getDate() + 1);
+      }
+      setTempShibuts({
+        ...tempShibuts,
+        start,
+        end,
+      });
+    },
+    [tempShibuts]
+  );
+
+  const onAutoShibutsClick = useCallback(async () => {
+    if (autoShibutsStartDate && autoShibutsEndDate) {
+      const dates = [autoShibutsStartDate.toDate(), autoShibutsEndDate.toDate()];
+      let newShibutsim = await withLoading(() => getAutoShibutsimByCampIdAndDates(campId, dates));
       setShibutsim(shibutsim?.concat(mapShibutsim(newShibutsim)));
-    }else{
-      toast.error("נא לבחור תאריכים לשיבוץ אוטומטי")
+    } else {
+      toast.error("נא לבחור תאריכים לשיבוץ אוטומטי");
     }
-  }, [autoShibutsDates]);
+  }, [autoShibutsStartDate, autoShibutsEndDate, campId, shibutsim, mapShibutsim]);
 
-  const onDeleteAutoShibutsClick = useCallback( async () => {
-    if(autoShibutsDates){
-      await withLoading(()=>deleteAutoShibutsim(campId, autoShibutsDates));
-      setShibutsim(await getShibutsimOfCurrentMonthByCampId(campId));
-    }else{
-      toast.error("נא לבחור תאריכים לשיבוץ אוטומטי למחיקה")
+  const onDeleteAutoShibutsClick = useCallback(async () => {
+    if (autoShibutsStartDate && autoShibutsEndDate) {
+      const dates = [autoShibutsStartDate.toDate(), autoShibutsEndDate.toDate()];
+      await withLoading(() => deleteAutoShibutsim(campId, dates));
+      const updated = await getShibutsimOfCurrentMonthByCampId(campId);
+      setShibutsim(mapShibutsim(updated || []));
+    } else {
+      toast.error("נא לבחור תאריכים לשיבוץ אוטומטי למחיקה");
     }
-    
-  }, [autoShibutsDates, campId]);
+  }, [autoShibutsStartDate, autoShibutsEndDate, campId, mapShibutsim]);
 
-  const autoShibutsDatesChange = (ev) => {
-    setAutoShibutsDates(ev.value);
-}
+  const visibleOutpostIds = useMemo(() => {
+    if (!Array.isArray(selectedOutpostIds)) return outposts.map((o) => o.id);
+    return selectedOutpostIds;
+  }, [outposts, selectedOutpostIds]);
+
+  const resources = useMemo(() => {
+    if (!outposts) return [];
+    return outposts
+      .filter((o) => visibleOutpostIds.includes(o.id))
+      .map((o) => ({
+      resourceId: o.id,
+      resourceTitle: o.name,
+    }));
+  }, [outposts, visibleOutpostIds]);
+
+  const calendarEvents = useMemo(() => {
+    const splitEvents = [];
+
+    shibutsim.forEach((s, idx) => {
+      if (!visibleOutpostIds.includes(s.resource)) {
+        return;
+      }
+      const originalStart = new Date(s.start);
+      const originalEnd = new Date(s.end);
+      const baseEvent = {
+        ...s,
+        title: s.guardName || "",
+        resourceId: s.resource,
+        originalStart,
+        originalEnd,
+      };
+
+      let segmentStart = new Date(originalStart);
+      let segmentIndex = 0;
+      while (segmentStart < originalEnd) {
+        const nextMidnight = new Date(segmentStart);
+        nextMidnight.setDate(nextMidnight.getDate() + 1);
+        nextMidnight.setHours(0, 0, 0, 0);
+        const isLastSegmentOfDay = originalEnd >= nextMidnight;
+        const segmentEnd = originalEnd < nextMidnight ? new Date(originalEnd) : nextMidnight;
+        const isFromPreviousDay = segmentStart.getTime() > originalStart.getTime();
+
+        const displayEnd = new Date(segmentEnd);
+        if (isLastSegmentOfDay) {
+          displayEnd.setTime(nextMidnight.getTime() - 1000);
+        }
+
+        splitEvents.push({
+          ...baseEvent,
+          id: `${s.shibutsId || idx}-${segmentIndex}`,
+          start: new Date(segmentStart),
+          end: displayEnd,
+          isFromPreviousDay,
+        });
+
+        segmentStart = new Date(segmentEnd);
+        segmentIndex += 1;
+      }
+    });
+
+    return splitEvents;
+  }, [shibutsim, visibleOutpostIds]);
+
+  const handleOutpostFilterChange = useCallback((event) => {
+    const value = event.target.value;
+    setSelectedOutpostIds(Array.isArray(value) ? value : []);
+  }, []);
+
+  const eventPropGetter = useCallback((event) => {
+    const baseColor = event.color || "#3174ad";
+    const style = {
+      backgroundColor: baseColor,
+      borderRadius: "4px",
+      opacity: 0.9,
+      color: "white",
+      border: "0px",
+      display: "block",
+    };
+    if (event.isFromPreviousDay) {
+      style.opacity = 0.45;
+      style.backgroundImage = `repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 4px,
+        rgba(255,255,255,0.18) 4px,
+        rgba(255,255,255,0.18) 8px
+      )`;
+    }
+    return { style };
+  }, []);
+
+  const messages = {
+    today: "היום",
+    previous: "הקודם",
+    next: "הבא",
+    month: "חודש",
+    week: "שבוע",
+    day: "יום",
+    agenda: "סדר יום",
+    date: "תאריך",
+    time: "שעה",
+    event: "אירוע",
+    noEventsInRange: "אין אירועים בטווח זה",
+  };
 
   return (
     <div>
-      <SelectCamp setSelectedCampId={setCampId} selectedCampId={campId} title={"שיבוץ שמירות"} title2={"בבסיס:"} />
-      <Datepicker
-          select="range"
-          inputComponent="input"
-          inputProps={{
-              placeholder: 'בחירת תאריכים לשיבוץ',
-              style: {"line-height": "2.5"}
-          }}
-          value={autoShibutsDates}
-          onChange={autoShibutsDatesChange}
-          min={new Date()}
-      />
-      <Button className="mbsc-button " color="info" onClick={onAutoShibutsClick}>
-        שיבוץ אוטומטי
-      </Button>
-      <Button className="mbsc-button" color="danger" onClick={onDeleteAutoShibutsClick}>
-        מחיקת שיבוצים
-      </Button>
+      <SelectCamp setSelectedCampId={setCampId} selectedCampId={campId} title={"שיבוץ משמרות"} title2={"בבסיס:"} />
+      {isCommander && (
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 2, flexWrap: "wrap" }}>
+            <DatePicker
+              label="מתאריך"
+              value={autoShibutsStartDate}
+              onChange={(val) => setAutoShibutsStartDate(val)}
+              minDate={dayjs()}
+              renderInput={(params) => <TextField {...params} size="small" />}
+            />
+            <DatePicker
+              label="עד תאריך"
+              value={autoShibutsEndDate}
+              onChange={(val) => setAutoShibutsEndDate(val)}
+              minDate={autoShibutsStartDate || dayjs()}
+              renderInput={(params) => <TextField {...params} size="small" />}
+            />
+            <Button variant="contained" color="info" onClick={onAutoShibutsClick}>
+              שיבוץ אוטומטי
+            </Button>
+            <Button variant="contained" color="error" onClick={onDeleteAutoShibutsClick}>
+              מחיקת שיבוצים
+            </Button>
+          </Box>
+        </LocalizationProvider>
+      )}
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 2, flexWrap: "wrap" }}>
+        <FormControl size="small" sx={{ minWidth: 260 }}>
+          <InputLabel id="outpost-filter-label">עמדות להצגה ביומן</InputLabel>
+          <Select
+            labelId="outpost-filter-label"
+            multiple
+            value={visibleOutpostIds}
+            onChange={handleOutpostFilterChange}
+            label="עמדות להצגה ביומן"
+            renderValue={(selected) => {
+              if (!selected.length) return "לא נבחרו עמדות";
+              if (selected.length === outposts.length) return "כל העמדות";
+              return `${selected.length} עמדות נבחרו`;
+            }}
+          >
+            {outposts.map((outpost) => (
+              <MenuItem key={outpost.id} value={outpost.id}>
+                <Checkbox checked={visibleOutpostIds.includes(outpost.id)} />
+                <ListItemText primary={outpost.name} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Button variant="outlined" onClick={() => setSelectedOutpostIds(outposts.map((o) => o.id))}>
+          הצג הכל
+        </Button>
+        <Button variant="text" color="inherit" onClick={() => setSelectedOutpostIds([])}>
+          נקה הכל
+        </Button>
+      </Box>
+
       {isLoading || guardsLoading || outpostsLoading || shiftsLoading ? (
         <LoadingComp />
       ) : (
         <>
-          <Eventcalendar className="md-timetable" view={view} data={shibutsim} resources={outposts} extendDefaultEvent={myDefaultShibuts} renderScheduleEventContent={myCustomShibuts} onEventUpdate={onShibutsMove} clickToCreate={true} dragToCreat={true} dragToMove={true} dragTimeStep={15} eventDelete={true} onEventClick={onShibutsClick} onEventCreate={onShibutsCreate} colors={shifts} />
+          <div style={{ height: "70vh" }}>
+            <Calendar
+              localizer={localizer}
+              culture="he"
+              events={calendarEvents}
+              dayLayoutAlgorithm="no-overlap"
+              resources={resources}
+              resourceIdAccessor="resourceId"
+              resourceTitleAccessor="resourceTitle"
+              startAccessor="start"
+              endAccessor="end"
+              defaultView="day"
+              views={["day", "week"]}
+              step={15}
+              timeslots={4}
+              date={currentDate}
+              onNavigate={setCurrentDate}
+              selectable={isCommander}
+              onSelectSlot={isCommander ? handleSelectSlot : undefined}
+              onSelectEvent={onShibutsClick}
+              eventPropGetter={eventPropGetter}
+              messages={messages}
+              formats={rtlFormats}
+              rtl={true}
+              style={{ minHeight: 500 }}
+            />
+          </div>
 
-          <Popup display="bottom" fullScreen={true} contentPadding={false} headerText={headerText} buttons={popupButtons} isOpen={isPopupOpen} onClose={onClose} responsive={responsivePopup} cssClass="employee-shifts-popup">
-            <div className="mbsc-form-group">
-              <Select data={guards} onChange={onGuardChange} label="בחירת שומר" />
-            </div>
-            {isEdit && (
-              <div className="mbsc-button-group">
-                <AddToCalendar shibuts={tempShibuts} guards={guards} outposts={outposts} />
-                <Button className="mbsc-button-block" color="danger" variant="outline" onClick={onDeleteClick}>
-                  <span className="mbsc-font-icon mbsc-icon-remove" style={{ margin: 5 }} />
-                  <span>מחיקת משמרת</span>
+          <Dialog open={isPopupOpen} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  פרטי המשמרת
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "120px 1fr",
+                    gap: 0.75,
+                    backgroundColor: "action.hover",
+                    borderRadius: 1.5,
+                    px: 1.5,
+                    py: 1.25,
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">שם המשמרת</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{dialogDetails.shiftName}</Typography>
+                  <Typography variant="body2" color="text.secondary">שם החייל</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{dialogDetails.guardName}</Typography>
+                  <Typography variant="body2" color="text.secondary">תאריך</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{dialogDetails.dateText}</Typography>
+                </Box>
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              {isCommander ? (
+                <>
+                  <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5, fontWeight: 700 }}>
+                    מה תרצה לעשות במשמרת הזאת?
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                    בחר חייל מהרשימה ולחץ שמירה כדי לעדכן את השיבוץ.
+                  </Typography>
+                  <FormControl fullWidth sx={{ mt: 1 }}>
+                    <InputLabel>שם החייל</InputLabel>
+                    <Select
+                      value={tempShibuts?.guardId || ""}
+                      onChange={onGuardChange}
+                      label="שם החייל"
+                    >
+                      {guards?.map((g) => (
+                        <MenuItem key={g.value} value={g.value}>
+                          {g.text}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  {isEdit && (
+                    <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        פעולות נוספות
+                      </Typography>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          label="הזזה ידנית לתאריך"
+                          value={tempShibuts?.start ? dayjs(tempShibuts.start) : null}
+                          onChange={onCommanderMoveDate}
+                          renderInput={(params) => <TextField {...params} size="small" />}
+                        />
+                      </LocalizationProvider>
+                      <AddToCalendar shibuts={tempShibuts} guards={guards} outposts={outposts} />
+                      <Button fullWidth variant="outlined" color="error" onClick={onDeleteClick}>
+                        מחיקת משמרת
+                      </Button>
+                    </Box>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  ניתן לצפות בפרטי המשמרת בלבד. לשינויים, פנה למפקד.
+                </Typography>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={onClose}>{isCommander ? "ביטול" : "סגור"}</Button>
+              {isCommander && (
+                <Button
+                  variant="contained"
+                  onClick={() => checkAnsSaveShibuts(tempShibuts)}
+                >
+                  {isEdit ? "שמור שינוי" : "יצירת שיבוץ"}
                 </Button>
-              </div>
-            )}
-          </Popup>
+              )}
+            </DialogActions>
+          </Dialog>
         </>
       )}
     </div>

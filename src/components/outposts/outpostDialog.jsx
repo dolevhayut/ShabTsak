@@ -72,14 +72,14 @@ export default function OutpostDialog({ openDialog, setOpenDialog, method, item 
                         <TextField
                             {...register('minGuards', {
                                 required:
-                                    { value: true, message: 'חובה למלא כמה שומרים בעמדה' },
-                                min: { value: 1, message: "יש להגדיר לפחות שומר 1 בעמדה" },
-                                max: { value: 10, message: "מקסימום 10 שומרים בעמדה" }
+                                    { value: true, message: 'חובה להזין כמה חיילים בעמדה' },
+                                min: { value: 1, message: "יש להגדיר לפחות חייל 1 בעמדה" },
+                                max: { value: 10, message: "מקסימום 10 חיילים בעמדה" }
                             })}
                             color="primary"
                             size="small"
                             autoComplete="off"
-                            label="מינימום שומרים בעמדה"
+                            label="מינימום חיילים בעמדה"
                             sx={{ marginTop: "8px" }}
                         />
                         <FormHelperText error={!!errors.minGuards}>

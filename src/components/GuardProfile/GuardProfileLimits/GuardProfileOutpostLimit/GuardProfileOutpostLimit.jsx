@@ -15,10 +15,10 @@ import {
 import { getOutpostsByCampId } from "@/services/outpostService.js";
 import { createGuardOutpostLimit, deleteOutpostLimit, getGuardOutpostLimitByGuardId } from "@/services/outpostLimitService.js";
 import GuardProfileOutpostLimitTable from "./GuardProfileOutpostLimitTable/GuardProfileOutpostLimitTable.jsx";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
 import { AddBox } from "@mui/icons-material";
 
-const GuardProfileOutpostLimit = ({ guardId, campId }) => {
+const GuardProfileOutpostLimit = ({ guardId, campId, readOnly }) => {
   const queryClient = useQueryClient();
 
   const { data: outposts, isLoading: isLoadingOutposts } = useQuery({
@@ -88,13 +88,12 @@ const GuardProfileOutpostLimit = ({ guardId, campId }) => {
 
   return (
     <>
-      <Stack direction="row" alignItems="center">
-        <Typography variant="h5" width={80}>
-          לפי עמדה:
-        </Typography>
-        <IconButton type="button" size="small" color="primary" variant="outlined" onClick={handleOpenDialog}>
-          <AddBox />
-        </IconButton>
+      <Stack direction="row" alignItems="center" spacing={0.5}>
+        {!readOnly && (
+          <IconButton type="button" size="small" color="primary" onClick={handleOpenDialog} aria-label="הוספת מגבלת עמדה">
+            <AddBox />
+          </IconButton>
+        )}
       </Stack>
 
       <Dialog
@@ -121,7 +120,7 @@ const GuardProfileOutpostLimit = ({ guardId, campId }) => {
         </DialogActions>
       </Dialog>
 
-      <GuardProfileOutpostLimitTable guardId={guardId} campId={campId} outposts={outposts} outpostLimits={outpostLimits} handleDelete={deleteGuardOutpostLimitMutation.mutate} />
+      <GuardProfileOutpostLimitTable guardId={guardId} campId={campId} outposts={outposts} outpostLimits={outpostLimits} handleDelete={readOnly ? undefined : deleteGuardOutpostLimitMutation.mutate} />
     </>
   );
 };

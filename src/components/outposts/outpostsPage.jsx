@@ -9,11 +9,13 @@ import BackLink from "../general_comps/BackLink.jsx";
 import LoadingComp from "../general_comps/LoadingComp.jsx";
 import AddOutpostBtn from "./addOutpostBtn/addOutpostBtn.jsx";
 import { getOutpostsByCampId } from "@/services/outpostService.js";
+import { useIsCommander } from "@/hooks/useIsCommander";
 
 const OutpostsPage = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const params = useParams();
   const campId = params["id"];
+  const isCommander = useIsCommander();
 
   const { isLoading, data: outposts } = useQuery({
     queryFn: () => getOutpostsByCampId(campId),
@@ -22,11 +24,10 @@ const OutpostsPage = () => {
 
   return (
     <div className="outPosts-page">
-      <Container fixed>
-        {/* btn-add Outpost */}
-        <AddOutpostBtn setOpenDialog={setOpenDialog} />
+      <Container maxWidth={false} disableGutters>
+        {isCommander && <AddOutpostBtn setOpenDialog={setOpenDialog} />}
 
-        <Typography variant="h3" component="h2" mb={2}>
+        <Typography variant="h2" component="h1" mb={3}>
           רשימת עמדות {params["name"]}
         </Typography>
 
@@ -40,7 +41,7 @@ const OutpostsPage = () => {
           <OutpostList outposts={outposts} />
         )}
 
-        <OutpostDialog openDialog={openDialog} setOpenDialog={setOpenDialog} method="POST" />
+        {isCommander && <OutpostDialog openDialog={openDialog} setOpenDialog={setOpenDialog} method="POST" />}
 
         <BackLink place="end" icon={<ArrowBackIosIcon />}>
           חזרה לרשימת הבסיסים

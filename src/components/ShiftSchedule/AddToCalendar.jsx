@@ -1,45 +1,77 @@
-import { toast } from "react-toastify";
-import { Button } from "@mobiscroll/react";
+import { toast } from "@/services/notificationService";
+import { Button } from "@mui/material";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 const formatToISOString = (date) => date.toISOString().replace(/[-:.]/g, "");
 
-const AddToCalendar = ({ shibuts = {}, guards, outposts }) => {
-  if (!shibuts.campId) {
-    toast.error("אנא בחר מחנה לפני הוספת האירוע ליומן");
-    return;
-  }
+const buildEventLink = (event) => {
+  const startDate = new Date(event.start);
+  const endDate = new Date(event.end);
+  const startTime = formatToISOString(startDate);
+  const endTime = formatToISOString(endDate);
+  const guardName = event.guardName || "חייל";
+  const outpostName = event.outpostName || "עמדה";
+  const guardMail = event.guardMail || "";
+  const guardPhone = event.guardPhone || "";
 
-  if (!shibuts || Object.keys(shibuts).length === 0) {
-    toast.error("אין נתוני שיבוצים זמינים להוספה ליומן");
-    return;
-  }
+  return `https://www.google.com/calendar/event?action=TEMPLATE&text=משמרת+לחייל+${guardName}&dates=${startTime}/${endTime}&details=חייל:+${guardName}%0Aעמדה:+${outpostName}%0Aאימייל:+${guardMail}%0Aטלפון:+${guardPhone}&add=${guardMail}`;
+};
 
-  const addToGoogleCalendar = () => {
-    const { guardId, guardName, start, end, outpostId } = shibuts;
-
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-
-    const startTime = formatToISOString(startDate);
-    const endTime = formatToISOString(endDate);
-
-    const guard = guards.find((g) => g.value === guardId);
-    const outpost = outposts.find((o) => o.id === outpostId);
-
-    if (!guard) {
-      throw new Error("שומר לא נמצא עבור השיבוץ");
+const AddToCalendar = ({ shibuts = {}, guards = [], outposts = [], mode = "single", events = [] }) => {
+  const resolveSingleEvent = () => {
+    if (!shibuts || Object.keys(shibuts).length === 0) {
+      return null;
     }
 
-    const eventLink = `https://www.google.com/calendar/event?action=TEMPLATE&text=משמרת+לשומר+${guardName}&dates=${startTime}/${endTime}&details=שומר:+${guardName}%0Aעמדה:+${outpost.name}%0Aאימייל:+${guard.guardMail}%0Aטלפון:+${guard.guardPhone}&add=${guard.guardMail}`;
-    window.open(eventLink, "_blank");
+    if (shibuts.outpostName) {
+      return shibuts;
+    }
 
+    const guard = guards.find((g) => g.value === shibuts.guardId);
+    const outpost = outposts.find((o) => o.id === shibuts.outpostId);
+
+    return {
+      ...shibuts,
+      guardName: shibuts.guardName,
+      outpostName: outpost?.name,
+      guardMail: guard?.guardMail,
+      guardPhone: guard?.guardPhone,
+    };
+  };
+
+  const addToGoogleCalendar = () => {
+    if (mode === "bulk") {
+      if (!events.length) {
+        toast.error("אין משמרות זמינות להוספה");
+        return;
+      }
+      events.forEach((event) => {
+        const eventLink = buildEventLink(event);
+        window.open(eventLink, "_blank");
+      });
+      toast.success("המשמרות נפתחו ביומן של גוגל");
+      return;
+    }
+
+    const event = resolveSingleEvent();
+    if (!event) {
+      toast.error("אין נתוני שיבוץ זמינים להוספה ליומן");
+      return;
+    }
+
+    const eventLink = buildEventLink(event);
+    window.open(eventLink, "_blank");
     toast.success("קישור לאירוע ביומן של גוגל נוצר בהצלחה");
   };
 
   return (
-    <Button className="mbsc-button-block" variant="outline" onClick={addToGoogleCalendar}>
-      <span className="mbsc-font-icon mbsc-icon-line-calendar" style={{ margin: 5 }} />
-      <span>הוספה ליומן</span>
+    <Button
+      fullWidth
+      variant="outlined"
+      onClick={addToGoogleCalendar}
+      startIcon={<CalendarMonthIcon />}
+    >
+      הוספה ליומן
     </Button>
   );
 };

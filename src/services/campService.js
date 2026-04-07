@@ -1,14 +1,16 @@
-import { toast } from "react-toastify";
-import { CAMP_URL } from "../constants/apiConstants";
-import { doApiGet, doApiMethod } from "./apiService.ts";
+import { toast } from "@/services/notificationService";
+import { supabase } from "./supabaseClient";
+import { getCredentials } from "./authCredentials";
 
 export async function getCamps() {
-    let url = CAMP_URL + "/all"
     try {
-        let resp = await doApiGet(url);
-        return resp.data
-    }
-    catch (err) {
+        const { data, error } = await supabase
+            .from("camps")
+            .select("*")
+            .order("id");
+        if (error) throw error;
+        return data;
+    } catch (err) {
         console.log(err);
         toast.error("יש בעיה בבקשה נסה מאוחר יותר");
     }
@@ -16,12 +18,23 @@ export async function getCamps() {
 
 export async function createOrUpdateCamp(bodyFormData, method, prevItemForUpdate) {
     try {
-        let resp = await doApiMethod(CAMP_URL, method, bodyFormData);
-        if (resp.status === 201 && method === "POST")
-            toast.success(`בסיס ${resp.data.name} נוסף בהצלחה`);
-        else if (resp.status === 200 && method === "PUT")
+        const creds = getCredentials();
+        if (method === "POST") {
+            const { data, error } = await supabase.rpc("rpc_create_camp", {
+                ...creds,
+                p_name: bodyFormData.name,
+            });
+            if (error) throw error;
+            toast.success(`בסיס ${bodyFormData.name} נוסף בהצלחה`);
+        } else if (method === "PUT") {
+            const { error } = await supabase.rpc("rpc_update_camp", {
+                ...creds,
+                p_camp_id: bodyFormData.id,
+                p_name: bodyFormData.name,
+            });
+            if (error) throw error;
             toast.success(`בסיס ${prevItemForUpdate.name} התעדכן בהצלחה`);
-        else toast.error("יש בעיה, בבקשה נסה מאוחר יותר");
+        }
     } catch (err) {
         console.error(`An error occurred while ${method} בסיס`, err);
         toast.error("יש בעיה, בבקשה נסה מאוחר יותר");

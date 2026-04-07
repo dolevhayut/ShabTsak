@@ -1,6 +1,10 @@
 const ROUTES = {
   HOME: "/",
   SCHEDULE: "/schedule",
+  MY_SHIFTS: "/my-shifts",
+  ANALYTICS: "/analytics",
+  SHIFT_REQUESTS: "/shift-requests",
+  COMMANDER_AI: "/commander-ai",
   GUARDS: "/guards",
   GUARD_PROFILE: "/guards/:guardId",
   OUTPOSTS: "/outposts",
@@ -11,6 +15,7 @@ const ROUTES = {
   TERMS: '/terms',
   CAMP: '/camp',
   LANDING: '/landing',
+  REGISTER: '/register',
 };
 
 export default ROUTES;

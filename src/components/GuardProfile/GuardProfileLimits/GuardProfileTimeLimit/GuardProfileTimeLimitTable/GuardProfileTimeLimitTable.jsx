@@ -17,8 +17,8 @@ const GuardProfileTimeLimitTable = ({ timeLimits, handleDelete }) => {
         {timeLimits.map((limit) => (
           <TableRow key={limit.id}>
             <TableCell>{getDayName(limit.dayId)}</TableCell>
-            <TableCell>{limit.fromHour}:00</TableCell>
-            <TableCell>{limit.toHour}:00</TableCell>
+            <TableCell>{String(limit.fromHour).padStart(2, "0")}:00</TableCell>
+            <TableCell>{String(limit.toHour).padStart(2, "0")}:00</TableCell>
             <TableCell>
               <IconButton aria-label="delete" color="error" onClick={() => handleDelete(limit.id)}>
                 <DeleteIcon />

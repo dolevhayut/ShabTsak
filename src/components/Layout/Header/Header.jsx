@@ -2,7 +2,7 @@
 import { useState } from "react";
 import AppBar from "@mui/material/AppBar";
 import IconButton from "@mui/material/IconButton";
-import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
 import Menu from "@mui/material/Menu";
 import MenuIcon from "@mui/icons-material/Menu";
 import Container from "@mui/material/Container";
@@ -10,14 +10,21 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
 import CloseIcon from "@mui/icons-material/Close";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import GroupsIcon from "@mui/icons-material/Groups";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "@/theme/theme";
 import Logo from "components/general_comps/Logo.jsx";
+import ThemeToggle from "components/general_comps/ThemeToggle.jsx";
 import srcImg from "/images/man.png";
-import { toast } from "react-toastify";
+import { toast } from "@/services/notificationService";
 import ROUTES from "@/constants/routeConstants.js";
 import DialogLogOut from "components/general_comps/dialogs/dialogLogOut.jsx";
 import { useDarkModeStore } from "@/theme/useDarkModeStore.jsx";
@@ -25,19 +32,39 @@ import { Link as RouterLink } from "react-router-dom";
 import { useAuthContext } from "@/context/AuthContext";
 import { useQueryClient } from "react-query";
 
+const getNavLinks = (user) => {
+  const links = [
+    { label: "בסיסים", to: ROUTES.HOME, Icon: ApartmentIcon },
+    { label: "שיבוץ משמרות", to: ROUTES.SCHEDULE, Icon: CalendarMonthIcon },
+    { label: "המשמרות שלי", to: ROUTES.MY_SHIFTS, Icon: EventAvailableIcon },
+    { label: 'סד"כ', to: ROUTES.GUARDS, Icon: GroupsIcon },
+    { label: "אנליטיקס", to: ROUTES.ANALYTICS, Icon: AnalyticsIcon },
+  ];
+
+  if (user?.role === "commander") {
+    links.push({ label: "בקשות משמרת", to: ROUTES.SHIFT_REQUESTS, Icon: MarkEmailUnreadIcon });
+    links.push({ label: "עוזר מפקד AI", to: ROUTES.COMMANDER_AI, Icon: SmartToyIcon });
+  }
+
+  return links;
+};
+
+const getRoleLabel = (role) => {
+  if (role === "commander") return "מפקד";
+  return "חייל";
+};
+
 const Header = () => {
   const { user, logout } = useAuthContext();
-  // Navbar states
+  const navLinks = getNavLinks(user);
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [displayBurger, setDisplayBurger] = useState("block");
   const [displayButtonX, setDisplayButtonX] = useState("none");
   const queryClient = useQueryClient();
-
-  //sure dialog for log out
   const [openSureDialog, setOpenSureDialog] = useState(false);
+  const { darkMode, toggleDarkMode } = useDarkModeStore();
 
-  // Navbar functions
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
     setDisplayBurger("none");
@@ -50,19 +77,14 @@ const Header = () => {
     setDisplayButtonX("none");
   };
 
-  // Open user menu
   const handleOpenUserMenu = (event) => {
     setAnchorElUser(event.currentTarget);
   };
 
-  // Close user menu
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
   };
 
-  const { darkMode, toggleDarkMode } = useDarkModeStore();
-
-  //open dialog LogOut
   const ClickLogOut = () => {
     handleCloseUserMenu();
     setOpenSureDialog(true);
@@ -80,125 +102,237 @@ const Header = () => {
     toast.success("זכור! אלוקים איתך! יחד נלחם וננצח!");
   };
 
+  const appBarBg = darkMode
+    ? "rgba(0,0,0,0.85)"
+    : "rgba(255,255,255,0.85)";
+
+  const borderColor = darkMode ? "#38383A" : "#E8E8ED";
+  const textColor = darkMode ? "#F5F5F7" : "#1D1D1F";
+  const accentColor = darkMode ? "#6B8F4B" : "#4B6B2A";
+
   return (
     <ThemeProvider theme={theme}>
-      <AppBar position="static" color={darkMode === false ? "primary" : "darkMode"}>
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          background: appBarBg,
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: `1px solid ${borderColor}`,
+          boxShadow: "none",
+          top: 0,
+          zIndex: 1100,
+        }}
+      >
         <Container maxWidth="lg">
-          <Grid container justifyContent="space-between" alignItems="center">
-            {/* big screen */}
-            <Grid item sx={{ display: { xs: "none", md: "block" } }}>
-              <Logo />
-            </Grid>
-
-            {/* small screen */}
-            <Grid item sx={{ display: { sx: "flex", md: "none" }, ...(!user ? { visibility: "hidden" } : {}) }}>
-              <IconButton size="small" aria-label="account of the current user" aria-controls="menu-appbar" aria-haspopup="true" onClick={handleOpenNavMenu} color="white">
-                <MenuIcon sx={{ display: displayBurger, color: "white" }} />
-                <CloseIcon sx={{ display: displayButtonX, color: "white" }} />
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorElNav}
-                anchorOrigin={{
-                  vertical: "bottom",
-                  horizontal: "left",
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: "top",
-                  horizontal: "left",
-                }}
-                open={Boolean(anchorElNav)}
-                onClose={handleCloseNavMenu}
-                sx={{
-                  display: { xs: "block", md: "none" },
-                }}
-              >
-                <MenuItem component={RouterLink} to={ROUTES.HOME} disabled={!user} onClick={handleCloseNavMenu}>
-                  בסיסים
-                </MenuItem>
-                <MenuItem component={RouterLink} to={ROUTES.SCHEDULE} disabled={!user} onClick={handleCloseNavMenu}>
-                  שיבוץ שמירות
-                </MenuItem>
-                <MenuItem component={RouterLink} to={ROUTES.GUARDS} disabled={!user} onClick={handleCloseNavMenu}>
-                  סד"כ
-                </MenuItem>
-              </Menu>
-            </Grid>
-
-            <Grid item sx={{ display: { sx: "block", md: "none" }, padding: "8px" }}>
-              <Logo />
-            </Grid>
-
-            <Grid item sx={{ display: { xs: "none", md: "flex" }, visibility: user ?? "hidden" }}>
-              <Button component={RouterLink} to={ROUTES.HOME} sx={{ color: "white", px: 3, py: 3 }}>
-                בסיסים
-              </Button>
-              <Button component={RouterLink} to={ROUTES.SCHEDULE} sx={{ color: "white", px: 3, py: 3 }}>
-                שיבוץ שמירות
-              </Button>
-              <Button component={RouterLink} to={ROUTES.GUARDS} sx={{ color: "white", px: 3, py: 3 }}>
-                סד"כ
-              </Button>
-            </Grid>
-
-            <Grid
-              item
-              sx={{
-                display: { xs: "none", md: "flex", textAlign: "center", px: 3, alignItems: "center", color: darkMode === true ? "#8ECDDD" : "yellow" },
-              }}
-            >
-              <Tooltip title={darkMode === false ? "אור" : "חושך"}>
-                <IconButton onClick={toggleDarkMode} color={darkMode ? "primary" : "inherit"}>
-                  {darkMode === true ? <Brightness7Icon /> : <Brightness4Icon />}
-                </IconButton>
-              </Tooltip>
-            </Grid>
-
-            <Grid item>
+          {/* Mobile header: profile left, logo center, hamburger right */}
+          <Box
+            sx={{
+              display: { xs: "flex", md: "none" },
+              alignItems: "center",
+              direction: "ltr",
+              height: "56px",
+              gap: 0.5,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", minWidth: 0, flex: 1, justifyContent: "flex-start" }}>
               <Tooltip title={user?.name ? `שלום ${user.name}` : "שלום, אנא התחבר"}>
-                <IconButton onClick={user ? handleOpenUserMenu : undefined} sx={{ p: 0 }}>
-                  <Avatar alt="Avatar" src={user?.picture || srcImg} referrerPolicy="no-referrer" imgProps={{ referrerPolicy: "no-referrer" }} />
+                <IconButton onClick={user ? handleOpenUserMenu : undefined} sx={{ p: 0.5 }}>
+                  <Avatar
+                    alt="Avatar"
+                    src={user?.picture || srcImg}
+                    referrerPolicy="no-referrer"
+                    imgProps={{ referrerPolicy: "no-referrer" }}
+                    sx={{ width: 34, height: 34 }}
+                  />
                 </IconButton>
               </Tooltip>
               {user && (
-                <Menu
-                  sx={{ mt: 5 }}
-                  id="menu-appbar"
-                  anchorEl={anchorElUser}
-                  anchorOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 0,
+                    maxWidth: "100%",
                   }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
-                  open={Boolean(anchorElUser)}
-                  onClose={handleCloseUserMenu}
                 >
-                  <MenuItem
-                    sx={{
-                      display: { xs: "flex", justifyContent: "space-between", md: "none", textAlign: "center", px: 3, alignItems: "center" },
-                    }}
-                    onClick={() => {
-                      toggleDarkMode();
-                      handleCloseUserMenu();
-                    }}
-                  >
-                    {darkMode === false ? "אור" : "חושך"}
-                    {darkMode === true ? <Brightness7Icon /> : <Brightness4Icon />}
-                  </MenuItem>
-                  <MenuItem onClick={ClickGoodLuck}>בהצלחה</MenuItem>
-                  <MenuItem onClick={ClickLogOut}>התנתקות</MenuItem>
-                </Menu>
+                  <ThemeToggle darkMode={darkMode} onToggle={toggleDarkMode} borderColor={borderColor} />
+                </Box>
               )}
-            </Grid>
-          </Grid>
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minWidth: 0 }}>
+              <Logo darkMode={darkMode} compact />
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flex: 1, minWidth: 0 }}>
+              {user && (
+                <IconButton
+                  size="small"
+                  aria-label="תפריט ניווט"
+                  aria-controls="menu-appbar-nav"
+                  aria-haspopup="true"
+                  onClick={handleOpenNavMenu}
+                  sx={{ display: "flex", color: textColor }}
+                >
+                  <MenuIcon sx={{ display: displayBurger }} />
+                  <CloseIcon sx={{ display: displayButtonX }} />
+                </IconButton>
+              )}
+            </Box>
+          </Box>
+
+          {/* Desktop header */}
+          <Box
+            sx={{
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+              justifyContent: "space-between",
+              height: "60px",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Logo darkMode={darkMode} />
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                visibility: user ? "visible" : "hidden",
+              }}
+            >
+              {navLinks.map((link) => (
+                <Button
+                  key={link.to}
+                  component={RouterLink}
+                  to={link.to}
+                  sx={{
+                    color: textColor,
+                    fontWeight: 500,
+                    fontSize: "0.9375rem",
+                    px: 2,
+                    py: 1,
+                    borderRadius: "8px",
+                    "&:hover": {
+                      color: accentColor,
+                      background: darkMode
+                        ? "rgba(107,143,75,0.08)"
+                        : "rgba(75,107,42,0.06)",
+                    },
+                  }}
+                >
+                  {link.label}
+                </Button>
+              ))}
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <ThemeToggle darkMode={darkMode} onToggle={toggleDarkMode} borderColor={borderColor} />
+
+              <Tooltip title={user?.name ? `שלום ${user.name}` : "שלום, אנא התחבר"}>
+                <IconButton onClick={user ? handleOpenUserMenu : undefined} sx={{ p: 0.5 }}>
+                  <Avatar
+                    alt="Avatar"
+                    src={user?.picture || srcImg}
+                    referrerPolicy="no-referrer"
+                    imgProps={{ referrerPolicy: "no-referrer" }}
+                    sx={{ width: 34, height: 34 }}
+                  />
+                </IconButton>
+              </Tooltip>
+
+              {user && (
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    color: textColor,
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    px: 1.25,
+                    py: 0.4,
+                    borderRadius: "999px",
+                    border: `1px solid ${borderColor}`,
+                    background: darkMode ? "rgba(255,255,255,0.03)" : "rgba(75,107,42,0.05)",
+                  }}
+                >
+                  {getRoleLabel(user.role)}
+                </Box>
+              )}
+            </Box>
+          </Box>
+
+          {user && (
+            <Menu
+              sx={{ mt: "44px" }}
+              id="menu-appbar-user"
+              anchorEl={anchorElUser}
+              anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              keepMounted
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+              open={Boolean(anchorElUser)}
+              onClose={handleCloseUserMenu}
+              PaperProps={{
+                sx: {
+                  borderRadius: "12px",
+                  border: `1px solid ${borderColor}`,
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
+                  minWidth: 160,
+                },
+              }}
+            >
+              <MenuItem sx={{ display: { xs: "flex", md: "none" }, opacity: 1 }} disabled>
+                {`${user?.name || ""} • ${getRoleLabel(user?.role)}`}
+              </MenuItem>
+              <MenuItem onClick={ClickGoodLuck}>בהצלחה</MenuItem>
+              <MenuItem onClick={ClickLogOut}>התנתקות</MenuItem>
+            </Menu>
+          )}
+
+          <Menu
+            id="menu-appbar-nav"
+            anchorEl={anchorElNav}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            keepMounted
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            open={Boolean(anchorElNav)}
+            onClose={handleCloseNavMenu}
+            sx={{ display: { xs: "block", md: "none" } }}
+            PaperProps={{
+              sx: {
+                borderRadius: "12px",
+                border: `1px solid ${borderColor}`,
+                boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
+                minWidth: 180,
+              },
+            }}
+          >
+            {navLinks.map((link) => {
+              const NavIcon = link.Icon;
+              return (
+                <MenuItem
+                  key={link.to}
+                  component={RouterLink}
+                  to={link.to}
+                  disabled={!user}
+                  onClick={handleCloseNavMenu}
+                  sx={{ fontWeight: 500, gap: 0.5 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 40, color: accentColor }}>
+                    <NavIcon fontSize="small" />
+                  </ListItemIcon>
+                  {link.label}
+                </MenuItem>
+              );
+            })}
+          </Menu>
         </Container>
       </AppBar>
-      {/*sure dialog for log out need to do */}
+
       <DialogLogOut openDialog={openSureDialog} setOpenDialog={setOpenSureDialog} onAction={OnLogOut} />
     </ThemeProvider>
   );
