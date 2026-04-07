@@ -221,7 +221,11 @@ export default function SystemMessagesPage() {
       </Stack>
 
       {/* ── camp selector ── */}
-      <SelectCamp campId={campId} setCampId={setCampId} />
+      <SelectCamp
+        selectedCampId={campId}
+        setSelectedCampId={setCampId}
+        onCampChange={() => {}}
+      />
 
       {campId && (
         <>
