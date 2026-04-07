@@ -8,22 +8,21 @@ import {
   Link as MuiLink,
   Stack,
   Typography,
+  Avatar,
 } from "@mui/material";
 import { motion, useAnimation, useInView } from "framer-motion";
 import { Link } from "react-router-dom";
 import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
-import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
-import MarkEmailUnreadOutlinedIcon from "@mui/icons-material/MarkEmailUnreadOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import AutoFixHighOutlinedIcon from "@mui/icons-material/AutoFixHighOutlined";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
 import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
+import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
 import { AnimatedWords } from "components/general_comps/AnimatedWords";
 import { delayedVariant, riseWithFade } from "@/utils/motionVariants";
 import ROUTES from "@/constants/routeConstants";
@@ -58,14 +57,11 @@ const GOLD = "#C8A94A";
 const GOLD_LIGHT = "#F1D36E";
 const CREAM = "#F8F4DD";
 const CREAM_MID = "#D7D3B1";
-const DARK = "#1B2416";
-const DARK_MID = "#2F3B2A";
-const GREEN_MID = "#5A6848";
-const GREEN_BORDER = "rgba(200,169,74,0.45)";
+const DARK = "#0A0D08"; // Darker, more modern black/green
+const DARK_MID = "#161C12"; // Sleek dark grey/green
+const GREEN_BORDER = "rgba(200,169,74,0.15)";
 const STRIPE =
-  "repeating-linear-gradient(90deg, #C8A94A 0 18px, #6B7A52 18px 36px, #4B5A3E 36px 54px)";
-const STRIPE2 =
-  "repeating-linear-gradient(90deg, #8A8F63 0 18px, #C8A94A 18px 36px, #5A6848 36px 54px)";
+  "repeating-linear-gradient(90deg, rgba(200,169,74,0.1) 0 18px, rgba(107,122,82,0.1) 18px 36px, rgba(75,90,62,0.1) 36px 54px)";
 
 // ── data ───────────────────────────────────────────────────────────────────────
 
@@ -132,16 +128,19 @@ const TESTIMONIALS = [
     quote: "המערכת חסכה לי שעות של עבודה כל שבוע. אין יותר ויכוחים על משמרות, הכל שקוף וברור.",
     name: "רועי כהן",
     role: "רבש״צ, יישוב בדרום",
+    initials: "רכ",
   },
   {
     quote: "סוף סוף אפליקציה שמבינה את הצרכים של כיתת כוננות. השיבוץ האוטומטי פשוט גאוני.",
     name: "יעל לוי",
     role: "סגנית רבש״צ, יישוב בצפון",
+    initials: "יל",
   },
   {
     quote: "החיילים מתים על זה. הם רואים הכל בנייד, מגישים בקשות בקלות, ומקבלים הודעות בזמן אמת.",
     name: "עומר יצחקי",
     role: "מפקד כיתת כוננות, עוטף עזה",
+    initials: "עי",
   },
 ];
 
@@ -159,12 +158,12 @@ export default function LandingPage() {
   const { user } = useAuthContext();
 
   return (
-    <Box dir="rtl">
+    <Box dir="rtl" sx={{ bgcolor: DARK, color: CREAM, overflowX: "hidden" }}>
       {/* ═══════════════════════════ HERO ═══════════════════════════ */}
       <Box
         component="header"
         sx={{
-          minHeight: { xs: "90vh", md: "82vh" },
+          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -172,52 +171,35 @@ export default function LandingPage() {
           textAlign: "center",
           px: { xs: 3, md: 6 },
           py: { xs: 8, md: 10 },
-          background: "linear-gradient(180deg, rgba(22,30,19,0.96) 0%, rgba(36,48,29,0.94) 100%)",
+          background: DARK,
+          backgroundImage: `
+            radial-gradient(circle at 50% 0%, rgba(200,169,74,0.15) 0%, transparent 60%),
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: "100% 100%, 40px 40px, 40px 40px",
           position: "relative",
           overflow: "hidden",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1588449797803-2da1c3d5d790?auto=format&fit=crop&w=1600&q=80')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            opacity: 0.1,
-            pointerEvents: "none",
-          },
         }}
       >
-        {/* glow orb */}
-        <Box
-          sx={{
-            position: "absolute",
-            width: 600,
-            height: 600,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(200,169,74,0.12) 0%, transparent 70%)",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            pointerEvents: "none",
-          }}
-        />
-
         <Container maxWidth="md" sx={{ position: "relative", zIndex: 1 }}>
-          <Stack gap={{ xs: 4, md: 5 }} alignItems="center">
-
+          <Stack gap={{ xs: 4, md: 6 }} alignItems="center">
             {/* badge */}
             <motion.div variants={delayedVariant(riseWithFade, 100)} initial="initial" animate="animate">
               <Chip
                 label="מערכת שמירה דיגיטלית לכיתות כוננות"
                 size="small"
                 sx={{
-                  bgcolor: "rgba(200,169,74,0.15)",
+                  bgcolor: "rgba(200,169,74,0.1)",
+                  backdropFilter: "blur(10px)",
                   color: GOLD_LIGHT,
-                  border: `1px solid rgba(200,169,74,0.4)`,
+                  border: `1px solid rgba(200,169,74,0.3)`,
                   fontWeight: 600,
                   fontSize: "0.75rem",
                   letterSpacing: "0.03em",
+                  px: 1,
+                  py: 2,
+                  boxShadow: "0 0 20px rgba(200,169,74,0.1)",
                 }}
               />
             </motion.div>
@@ -225,13 +207,16 @@ export default function LandingPage() {
             {/* headline */}
             <Typography
               variant="h1"
-              fontWeight={800}
+              fontWeight={900}
               sx={{
-                fontSize: { xs: "2.25rem", sm: "3rem", md: "4rem" },
-                letterSpacing: "-1px",
-                color: CREAM,
+                fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4.5rem" },
+                letterSpacing: "-1.5px",
                 lineHeight: 1.1,
                 textWrap: "balance",
+                background: `linear-gradient(to right, ${CREAM}, ${GOLD})`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))",
               }}
             >
               <AnimatedWords title="ניהול משמרות חכם לכיתות כוננות" />
@@ -245,7 +230,7 @@ export default function LandingPage() {
               animate="animate"
               sx={{
                 fontSize: { xs: "1.1rem", md: "1.25rem" },
-                color: CREAM_MID,
+                color: "#A1A1AA",
                 lineHeight: 1.75,
                 maxWidth: "600px",
                 textWrap: "balance",
@@ -256,23 +241,29 @@ export default function LandingPage() {
 
             {/* core feature pills */}
             <motion.div variants={delayedVariant(riseWithFade, 900)} initial="initial" animate="animate">
-              <Stack direction="row" gap={1} flexWrap="wrap" justifyContent="center">
+              <Stack direction="row" gap={1.5} flexWrap="wrap" justifyContent="center">
                 {CORE_FEATURES.map(({ Icon, label }) => (
                   <Stack
                     key={label}
                     direction="row"
                     alignItems="center"
-                    gap={0.5}
+                    gap={0.75}
                     sx={{
-                      bgcolor: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.12)",
+                      bgcolor: "rgba(255,255,255,0.03)",
+                      backdropFilter: "blur(8px)",
+                      border: "1px solid rgba(255,255,255,0.08)",
                       borderRadius: "999px",
-                      px: 1.5,
-                      py: 0.5,
+                      px: 2,
+                      py: 0.75,
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        bgcolor: "rgba(255,255,255,0.06)",
+                        borderColor: "rgba(200,169,74,0.3)",
+                      },
                     }}
                   >
-                    <Icon sx={{ fontSize: 14, color: GOLD_LIGHT }} />
-                    <Typography sx={{ fontSize: "0.75rem", color: CREAM_MID, fontWeight: 500 }}>
+                    <Icon sx={{ fontSize: 16, color: GOLD_LIGHT }} />
+                    <Typography sx={{ fontSize: "0.8rem", color: CREAM_MID, fontWeight: 500 }}>
                       {label}
                     </Typography>
                   </Stack>
@@ -281,19 +272,20 @@ export default function LandingPage() {
             </motion.div>
 
             {/* CTAs */}
-            <Stack direction={{ xs: "column", sm: "row" }} gap={2} alignItems="center" justifyContent="center">
+            <Stack direction={{ xs: "column", sm: "row" }} gap={2.5} alignItems="center" justifyContent="center" sx={{ mt: 2 }}>
               <Button
                 variant="contained"
                 href="#how-it-works"
                 sx={{
-                  borderRadius: "12px",
+                  borderRadius: "999px",
                   bgcolor: GOLD,
                   color: DARK,
-                  fontWeight: 700,
-                  fontSize: "0.9375rem",
-                  px: 3.5,
-                  py: 1.25,
-                  "&:hover": { bgcolor: "#B89535" },
+                  fontWeight: 800,
+                  fontSize: "1rem",
+                  px: 4,
+                  py: 1.5,
+                  boxShadow: "0 0 24px rgba(200,169,74,0.4)",
+                  "&:hover": { bgcolor: "#B89535", boxShadow: "0 0 32px rgba(200,169,74,0.6)" },
                 }}
               >
                 איך זה עובד?
@@ -305,13 +297,14 @@ export default function LandingPage() {
                 component={Link}
                 endIcon={<ArrowLeftIcon />}
                 sx={{
-                  borderRadius: "12px",
-                  borderColor: GOLD,
+                  borderRadius: "999px",
+                  borderColor: "rgba(255,255,255,0.2)",
                   color: CREAM,
                   fontWeight: 600,
-                  fontSize: "0.9375rem",
-                  px: 3.5,
-                  py: 1.25,
+                  fontSize: "1rem",
+                  px: 4,
+                  py: 1.5,
+                  backdropFilter: "blur(10px)",
                   "&:hover": {
                     borderColor: GOLD_LIGHT,
                     color: GOLD_LIGHT,
@@ -327,70 +320,61 @@ export default function LandingPage() {
       </Box>
 
       {/* stripe */}
-      <Box sx={{ height: 10, background: STRIPE }} />
+      <Box sx={{ height: 2, background: STRIPE }} />
 
       {/* ═══════════════════════ NEW FEATURES SECTION ══════════════════════ */}
       <Box
         component="section"
         sx={{
-          background: DARK,
-          py: { xs: 9, md: 13 },
+          background: DARK_MID,
+          py: { xs: 10, md: 16 },
           position: "relative",
-          overflow: "hidden",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(200,169,74,0.07) 0%, transparent 70%)",
-            pointerEvents: "none",
-          },
         }}
       >
-        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
+        <Container maxWidth="lg">
           {/* heading */}
           <FadeUp delay={100}>
-            <Box sx={{ textAlign: "center", mb: { xs: 6, md: 8 } }}>
-              <Chip
-                label="✦ היתרונות שלנו"
-                size="small"
+            <Box sx={{ textAlign: "center", mb: { xs: 8, md: 10 } }}>
+              <Typography
                 sx={{
-                  bgcolor: "rgba(200,169,74,0.12)",
+                  fontSize: "0.85rem",
+                  fontWeight: 800,
                   color: GOLD_LIGHT,
-                  border: `1px solid rgba(200,169,74,0.35)`,
-                  fontWeight: 600,
-                  fontSize: "0.72rem",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
                   mb: 2,
                 }}
-              />
+              >
+                היתרונות שלנו
+              </Typography>
               <Typography
                 variant="h2"
                 fontWeight={800}
                 sx={{
-                  fontSize: { xs: "1.75rem", md: "2.5rem" },
+                  fontSize: { xs: "2rem", md: "3rem" },
                   color: CREAM,
-                  letterSpacing: "-0.5px",
-                  mb: 1.5,
+                  letterSpacing: "-1px",
+                  mb: 2,
                 }}
               >
                 כל מה שצריך לניהול כיתת כוננות
               </Typography>
               <Typography
                 sx={{
-                  fontSize: { xs: "0.9375rem", md: "1rem" },
-                  color: CREAM_MID,
-                  maxWidth: 500,
+                  fontSize: { xs: "1rem", md: "1.15rem" },
+                  color: "#A1A1AA",
+                  maxWidth: 600,
                   mx: "auto",
                   lineHeight: 1.7,
                 }}
               >
-                ממשק אחד חכם ופשוט — למפקדים ולשומרים כאחד
+                ממשק אחד חכם ופשוט — למפקדים ולשומרים כאחד. בלי אקסלים, בלי הודעות שהולכות לאיבוד.
               </Typography>
             </Box>
           </FadeUp>
 
           {/* feature cards — bento layout */}
-          <Grid container spacing={{ xs: 1.5, md: 2 }}>
+          <Grid container spacing={{ xs: 2, md: 3 }}>
             {NEW_FEATURES.map(({ Icon, title, desc, isNew }, i) => (
               <Grid
                 item
@@ -403,78 +387,75 @@ export default function LandingPage() {
                   <Box
                     sx={{
                       height: "100%",
-                      minHeight: { xs: "auto", md: 190 },
-                      borderRadius: "18px",
-                      border: "1.5px solid",
-                      borderColor: GREEN_BORDER,
-                      background:
-                        i % 2 === 0
-                          ? "rgba(30,40,24,0.85)"
-                          : "rgba(46,58,36,0.80)",
-                      p: { xs: "22px", md: "30px" },
+                      minHeight: { xs: "auto", md: 220 },
+                      borderRadius: "24px",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      borderTop: "1px solid rgba(255,255,255,0.1)",
+                      background: "linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
+                      backdropFilter: "blur(20px)",
+                      p: { xs: "28px", md: "36px" },
                       display: "flex",
                       flexDirection: "column",
-                      gap: 2,
+                      gap: 2.5,
                       position: "relative",
                       overflow: "hidden",
-                      transition: "border-color 0.2s",
-                      "&:hover": { borderColor: GOLD },
-                      "&::after": {
-                        content: '""',
-                        position: "absolute",
-                        top: 0,
-                        right: 0,
-                        width: 80,
-                        height: 80,
-                        background:
-                          "radial-gradient(circle, rgba(200,169,74,0.1) 0%, transparent 70%)",
-                        borderRadius: "0 18px 0 0",
-                        pointerEvents: "none",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        borderColor: "rgba(200,169,74,0.3)",
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
+                        "& .feature-icon": {
+                          color: GOLD_LIGHT,
+                          transform: "scale(1.1)",
+                        }
                       },
                     }}
                   >
                     {/* icon + badge */}
                     <Stack direction="row" alignItems="center" justifyContent="space-between">
                       <Box
+                        className="feature-icon"
                         sx={{
-                          width: 42,
-                          height: 42,
-                          borderRadius: "11px",
-                          bgcolor: "rgba(200,169,74,0.15)",
-                          border: "1px solid rgba(200,169,74,0.3)",
+                          width: 48,
+                          height: 48,
+                          borderRadius: "14px",
+                          bgcolor: "rgba(200,169,74,0.1)",
+                          border: "1px solid rgba(200,169,74,0.2)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
+                          transition: "all 0.3s ease",
+                          color: GOLD,
                         }}
                       >
-                        <Icon sx={{ fontSize: 22, color: GOLD_LIGHT }} />
+                        <Icon sx={{ fontSize: 24 }} />
                       </Box>
                       {isNew && (
                         <Chip
                           label="חדש"
                           size="small"
                           sx={{
-                            bgcolor: "rgba(200,169,74,0.18)",
-                            color: GOLD,
-                            fontSize: "0.65rem",
-                            fontWeight: 700,
-                            height: 20,
-                            border: "1px solid rgba(200,169,74,0.35)",
+                            bgcolor: "rgba(200,169,74,0.15)",
+                            color: GOLD_LIGHT,
+                            fontSize: "0.7rem",
+                            fontWeight: 800,
+                            height: 24,
+                            border: "1px solid rgba(200,169,74,0.3)",
                           }}
                         />
                       )}
                     </Stack>
 
-                    <Box>
+                    <Box sx={{ mt: "auto" }}>
                       <Typography
                         variant="h6"
-                        fontWeight={700}
-                        sx={{ color: CREAM, fontSize: "1.05rem", mb: 0.75 }}
+                        fontWeight={800}
+                        sx={{ color: CREAM, fontSize: "1.2rem", mb: 1, letterSpacing: "-0.5px" }}
                       >
                         {title}
                       </Typography>
                       <Typography
-                        sx={{ fontSize: "0.9rem", color: "#B8B89A", lineHeight: 1.65 }}
+                        sx={{ fontSize: "0.95rem", color: "#A1A1AA", lineHeight: 1.6 }}
                       >
                         {desc}
                       </Typography>
@@ -488,54 +469,40 @@ export default function LandingPage() {
       </Box>
 
       {/* stripe */}
-      <Box sx={{ height: 10, background: STRIPE2 }} />
+      <Box sx={{ height: 2, background: STRIPE }} />
 
       {/* ═══════════════════════ HOW IT WORKS ══════════════════════════════ */}
       <Box
         component="section"
         id="how-it-works"
         sx={{
-          background: GREEN_MID,
-          py: { xs: 9, md: 13 },
-          borderTop: `2px solid ${GOLD}`,
-          borderBottom: "2px solid #3F4A31",
+          background: DARK,
+          py: { xs: 10, md: 16 },
           position: "relative",
-          overflow: "hidden",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1762247789974-2c1029cc04d7?auto=format&fit=crop&w=1600&q=80')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            opacity: 0.07,
-            pointerEvents: "none",
-          },
         }}
       >
-        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
+        <Container maxWidth="lg">
           <FadeUp delay={100}>
-            <Box sx={{ textAlign: "center", mb: { xs: 6, md: 8 } }}>
+            <Box sx={{ textAlign: "center", mb: { xs: 8, md: 10 } }}>
               <Typography
                 sx={{
-                  fontSize: "0.8125rem",
-                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  fontWeight: 800,
                   color: GOLD_LIGHT,
-                  letterSpacing: "0.08em",
+                  letterSpacing: "0.15em",
                   textTransform: "uppercase",
-                  mb: 1.5,
+                  mb: 2,
                 }}
               >
-                אז אתם בטח שואלים את עצמכם...
+                תהליך העבודה
               </Typography>
               <Typography
                 variant="h2"
                 fontWeight={800}
                 sx={{
-                  fontSize: { xs: "1.75rem", md: "2.5rem" },
-                  color: "#F8F4DD",
-                  letterSpacing: "-0.5px",
+                  fontSize: { xs: "2rem", md: "3rem" },
+                  color: CREAM,
+                  letterSpacing: "-1px",
                 }}
               >
                 איך זה עובד?
@@ -544,7 +511,7 @@ export default function LandingPage() {
           </FadeUp>
 
           {/* numbered steps */}
-          <Grid container spacing={{ xs: 1.5, md: 2 }}>
+          <Grid container spacing={{ xs: 2, md: 3 }}>
             {HOW_IT_WORKS.map(({ n, text }, i) => (
               <Grid
                 item
@@ -557,37 +524,48 @@ export default function LandingPage() {
                   <Box
                     sx={{
                       height: "100%",
-                      minHeight: { xs: "auto", md: i < 2 ? 180 : 150 },
-                      borderRadius: "16px",
-                      border: `1px solid ${GREEN_BORDER}`,
-                      background:
-                        i % 2 === 0
-                          ? "rgba(27,34,22,0.80)"
-                          : "rgba(47,59,42,0.78)",
-                      p: { xs: "20px", md: "28px" },
+                      minHeight: { xs: "auto", md: 180 },
+                      borderRadius: "24px",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      background: "rgba(255,255,255,0.02)",
+                      p: { xs: "28px", md: "36px" },
                       display: "flex",
                       flexDirection: "column",
-                      gap: 2,
-                      transition: "border-color 0.2s",
-                      "&:hover": { borderColor: GOLD },
+                      justifyContent: "center",
+                      position: "relative",
+                      overflow: "hidden",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        borderColor: "rgba(200,169,74,0.3)",
+                        background: "rgba(255,255,255,0.04)",
+                      },
                     }}
                   >
+                    {/* Watermark Number */}
                     <Typography
                       sx={{
-                        fontSize: "0.7rem",
-                        fontWeight: 800,
-                        color: GOLD_LIGHT,
-                        letterSpacing: "0.1em",
-                        fontVariantNumeric: "tabular-nums",
+                        position: "absolute",
+                        top: -20,
+                        right: -10,
+                        fontSize: "8rem",
+                        fontWeight: 900,
+                        color: "rgba(255,255,255,0.03)",
+                        lineHeight: 1,
+                        pointerEvents: "none",
+                        fontFamily: "monospace",
                       }}
                     >
                       {n}
                     </Typography>
+                    
                     <Typography
                       sx={{
-                        fontSize: { xs: "0.9375rem", md: "1rem" },
-                        color: "#F8F4DD",
-                        lineHeight: 1.65,
+                        fontSize: { xs: "1.05rem", md: "1.15rem" },
+                        color: CREAM,
+                        lineHeight: 1.6,
+                        fontWeight: 500,
+                        position: "relative",
+                        zIndex: 1,
                       }}
                     >
                       {text}
@@ -601,28 +579,27 @@ export default function LandingPage() {
       </Box>
 
       {/* stripe */}
-      <Box sx={{ height: 10, background: STRIPE }} />
+      <Box sx={{ height: 2, background: STRIPE }} />
 
       {/* ═══════════════════════ TESTIMONIALS ══════════════════════════════ */}
       <Box
         component="section"
         sx={{
           background: DARK_MID,
-          py: { xs: 9, md: 13 },
+          py: { xs: 10, md: 16 },
           position: "relative",
-          overflow: "hidden",
         }}
       >
-        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
+        <Container maxWidth="lg">
           <FadeUp delay={100}>
-            <Box sx={{ textAlign: "center", mb: { xs: 6, md: 8 } }}>
+            <Box sx={{ textAlign: "center", mb: { xs: 8, md: 10 } }}>
               <Typography
                 variant="h2"
                 fontWeight={800}
                 sx={{
-                  fontSize: { xs: "1.75rem", md: "2.5rem" },
+                  fontSize: { xs: "2rem", md: "3rem" },
                   color: CREAM,
-                  letterSpacing: "-0.5px",
+                  letterSpacing: "-1px",
                 }}
               >
                 מה אומרים עלינו בשטח?
@@ -630,46 +607,56 @@ export default function LandingPage() {
             </Box>
           </FadeUp>
 
-          <Grid container spacing={{ xs: 2, md: 3 }}>
-            {TESTIMONIALS.map(({ quote, name, role }, i) => (
+          <Grid container spacing={{ xs: 3, md: 4 }}>
+            {TESTIMONIALS.map(({ quote, name, role, initials }, i) => (
               <Grid item xs={12} md={4} key={name}>
                 <FadeUp delay={150 + i * 150}>
                   <Box
                     sx={{
                       height: "100%",
-                      borderRadius: "16px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      p: { xs: "24px", md: "32px" },
+                      borderRadius: "24px",
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      p: { xs: "32px", md: "40px" },
                       display: "flex",
                       flexDirection: "column",
-                      gap: 3,
+                      gap: 4,
+                      position: "relative",
+                      transition: "all 0.3s ease",
                       "&:hover": {
-                        background: "rgba(255,255,255,0.05)",
-                        borderColor: "rgba(200,169,74,0.3)",
+                        background: "rgba(255,255,255,0.04)",
+                        borderColor: "rgba(200,169,74,0.2)",
+                        transform: "translateY(-4px)",
                       },
-                      transition: "all 0.2s ease-in-out",
                     }}
                   >
+                    <FormatQuoteIcon sx={{ color: "rgba(200,169,74,0.2)", fontSize: 48, position: "absolute", top: 24, right: 24 }} />
                     <Typography
                       sx={{
-                        fontSize: "1.1rem",
-                        color: CREAM_MID,
-                        lineHeight: 1.6,
-                        fontStyle: "italic",
+                        fontSize: "1.15rem",
+                        color: "#D4D4D8",
+                        lineHeight: 1.7,
                         flexGrow: 1,
+                        position: "relative",
+                        zIndex: 1,
+                        mt: 2,
                       }}
                     >
                       "{quote}"
                     </Typography>
-                    <Box>
-                      <Typography sx={{ color: GOLD_LIGHT, fontWeight: 700, fontSize: "1rem" }}>
-                        {name}
-                      </Typography>
-                      <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: "0.85rem" }}>
-                        {role}
-                      </Typography>
-                    </Box>
+                    <Stack direction="row" alignItems="center" gap={2}>
+                      <Avatar sx={{ bgcolor: "rgba(200,169,74,0.15)", color: GOLD, fontWeight: 700 }}>
+                        {initials}
+                      </Avatar>
+                      <Box>
+                        <Typography sx={{ color: CREAM, fontWeight: 700, fontSize: "1.05rem" }}>
+                          {name}
+                        </Typography>
+                        <Typography sx={{ color: "#A1A1AA", fontSize: "0.9rem" }}>
+                          {role}
+                        </Typography>
+                      </Box>
+                    </Stack>
                   </Box>
                 </FadeUp>
               </Grid>
@@ -679,142 +666,89 @@ export default function LandingPage() {
       </Box>
 
       {/* stripe */}
-      <Box sx={{ height: 10, background: STRIPE2 }} />
+      <Box sx={{ height: 2, background: STRIPE }} />
 
       {/* ═══════════════════════ CTA / FINAL SECTION ═══════════════════════ */}
       <Box
         component="section"
-        id="get-started"
         sx={{
-          background: "linear-gradient(180deg, #D7D3B1 0%, #C8C39C 100%)",
-          py: { xs: 9, md: 13 },
-          borderTop: `2px solid ${GOLD}`,
+          background: DARK,
+          py: { xs: 12, md: 20 },
           position: "relative",
-          overflow: "hidden",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1588449797803-2da1c3d5d790?auto=format&fit=crop&w=1600&q=80')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            opacity: 0.05,
-            pointerEvents: "none",
-          },
+          textAlign: "center",
         }}
       >
-        <Container maxWidth="md" sx={{ position: "relative", zIndex: 1 }}>
-          <Stack gap={{ xs: 5, md: 7 }} alignItems="center">
+        <Container maxWidth="md">
+          <FadeUp delay={100}>
+            <Typography
+              variant="h2"
+              fontWeight={900}
+              sx={{
+                fontSize: { xs: "2.5rem", md: "4rem" },
+                color: CREAM,
+                letterSpacing: "-1px",
+                mb: 4,
+              }}
+            >
+              מוכנים לעשות סדר בשיבוצים?
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: { xs: "1.1rem", md: "1.25rem" },
+                color: "#A1A1AA",
+                mb: 6,
+                maxWidth: 500,
+                mx: "auto",
+              }}
+            >
+              הצטרפו לעשרות כיתות כוננות שכבר נהנות מניהול חכם, שקוף ופשוט.
+            </Typography>
+            
+            <Stack alignItems="center" gap={3}>
+              <Button
+                variant="contained"
+                to={user ? ROUTES.HOME : ROUTES.REGISTER}
+                component={Link}
+                endIcon={<ArrowLeftIcon />}
+                sx={{
+                  borderRadius: "999px",
+                  bgcolor: GOLD,
+                  color: DARK,
+                  fontWeight: 800,
+                  fontSize: "1.1rem",
+                  px: 6,
+                  py: 2,
+                  boxShadow: "0 0 30px rgba(200,169,74,0.3)",
+                  "&:hover": { bgcolor: "#B89535", boxShadow: "0 0 40px rgba(200,169,74,0.5)" },
+                }}
+              >
+                {user ? `כניסה לאפליקציה` : "התחילו עכשיו — זה בחינם"}
+              </Button>
 
-            {/* headline + perks */}
-            <FadeUp delay={100}>
-              <Stack alignItems="center" gap={3}>
-                <Typography
-                  variant="h2"
-                  fontWeight={800}
-                  sx={{
-                    fontSize: { xs: "1.75rem", md: "2.5rem" },
-                    color: DARK_MID,
-                    letterSpacing: "-0.5px",
-                    textAlign: "center",
-                    textWrap: "balance",
-                  }}
-                >
-                  הישארו מעודכנים בכל רגע
-                </Typography>
-
-                <Grid container spacing={1.5} justifyContent="center" sx={{ maxWidth: 680 }}>
-                  {[
-                    { emoji: "📱", text: "גישה מהנייד או המחשב — בכל מקום" },
-                    { emoji: "💻", text: "שינויים מתעדכנים לכלל החיילים בזמן אמת" },
-                    { emoji: "🏠", text: "עמוד הבית האישי מציג את המשמרת הבאה" },
-                    { emoji: "📢", text: "הודעות מהמפקד מגיעות ישירות לחייל" },
-                  ].map(({ emoji, text }) => (
-                    <Grid item xs={12} sm={6} key={text}>
-                      <Box
-                        sx={{
-                          bgcolor: "rgba(250,248,238,0.88)",
-                          border: "1px solid #A8AA7A",
-                          borderRadius: "14px",
-                          p: { xs: "18px", md: "22px" },
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: 1.5,
-                          height: "100%",
-                        }}
-                      >
-                        <Typography sx={{ fontSize: "1.25rem", lineHeight: 1.4, flexShrink: 0 }}>
-                          {emoji}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            fontSize: "0.9rem",
-                            color: DARK_MID,
-                            lineHeight: 1.6,
-                          }}
-                        >
-                          {text}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Stack>
-            </FadeUp>
-
-            {/* CTA button + terms */}
-            <FadeUp delay={200}>
-              <Stack alignItems="center" gap={2.5}>
-                <Button
-                  variant="contained"
-                  to={user ? ROUTES.HOME : ROUTES.REGISTER}
+              <Typography
+                sx={{
+                  fontSize: "0.85rem",
+                  color: "#71717A",
+                }}
+              >
+                השימוש במערכת הינו בהתאם ל
+                <MuiLink
                   component={Link}
-                  endIcon={<ArrowLeftIcon />}
+                  to={ROUTES.TERMS}
+                  underline="always"
                   sx={{
-                    borderRadius: "14px",
-                    bgcolor: GOLD,
-                    color: DARK,
-                    fontWeight: 700,
-                    fontSize: "1.0625rem",
-                    px: 5,
-                    py: 1.5,
-                    boxShadow: `0 4px 20px rgba(200,169,74,0.35)`,
-                    "&:hover": { bgcolor: "#B89535", boxShadow: `0 6px 28px rgba(200,169,74,0.45)` },
+                    color: "#A1A1AA",
+                    fontWeight: 600,
+                    mx: 0.5,
+                    "&:hover": { color: CREAM },
                   }}
                 >
-                  {user ? `כניסה לאפליקציה` : "הצטרפו עכשיו בחינם"}
-                </Button>
-
-                <Typography
-                  sx={{
-                    fontSize: "0.8125rem",
-                    color: "#4B5A3E",
-                    textAlign: "center",
-                    px: 3,
-                    textWrap: "balance",
-                  }}
-                >
-                  השימוש במערכת הינו בהתאם ל
-                  <MuiLink
-                    component={Link}
-                    to={ROUTES.TERMS}
-                    underline="always"
-                    sx={{
-                      textUnderlineOffset: "3px",
-                      color: "#4B5A3E",
-                      fontWeight: 600,
-                      mx: 0.5,
-                      "&:hover": { color: DARK_MID },
-                    }}
-                  >
-                    תנאי השימוש
-                  </MuiLink>
-                  שלנו.
-                </Typography>
-              </Stack>
-            </FadeUp>
-          </Stack>
+                  תנאי השימוש
+                </MuiLink>
+                שלנו.
+              </Typography>
+            </Stack>
+          </FadeUp>
         </Container>
       </Box>
     </Box>
