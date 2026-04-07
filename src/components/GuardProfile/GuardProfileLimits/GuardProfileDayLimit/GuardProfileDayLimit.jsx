@@ -65,7 +65,15 @@ const GuardProfileDayLimit = ({ guardId, readOnly }) => {
     <>
       <Stack direction="row" alignItems="center" spacing={1}>
         {!readOnly && (
-          <IconButton type="button" size="small" color="primary" onClick={() => setOpenDialog(true)}>
+          <IconButton
+            type="button"
+            size="small"
+            color="primary"
+            onClick={() => {
+              setDayId(0);
+              setOpenDialog(true);
+            }}
+          >
             <AddBox />
           </IconButton>
         )}

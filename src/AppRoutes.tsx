@@ -23,6 +23,7 @@ const ShiftRequestsPage = React.lazy(() => import("components/ShiftRequestsPage/
 const CommanderAiPage = React.lazy(() => import("components/CommanderAiPage/CommanderAiPage") as any);
 const AnalyticsPage = React.lazy(() => import("components/AnalyticsPage/AnalyticsPage") as any);
 import { useAuthContext } from "@/context/AuthContext";
+import { Box, CircularProgress } from "@mui/material";
 
 export default function AppRoutes() {
     return (
@@ -64,7 +65,11 @@ function PrivateRoute() {
     const { user } = useAuthContext();
 
     if (user === undefined) {
-        return null;
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
+                <CircularProgress aria-label="טוען" />
+            </Box>
+        );
     }
 
     if (user === null) {
@@ -78,7 +83,11 @@ function CommanderRoute() {
     const { user } = useAuthContext();
 
     if (user === undefined) {
-        return null;
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
+                <CircularProgress aria-label="טוען" />
+            </Box>
+        );
     }
 
     if (user === null) {
