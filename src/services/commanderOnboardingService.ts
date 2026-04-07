@@ -1,9 +1,12 @@
+import { supabase } from "@/services/supabaseClient";
+
 type CommanderOnboardingPayload = {
   sourceRef: string;
   fullName: string;
   campName: string;
   commanderId: string;
   commanderPhone: string;
+  onboardingPassword: string;
 };
 
 type CommanderOnboardingResult = {
@@ -14,27 +17,22 @@ type CommanderOnboardingResult = {
   registration_code: string;
 };
 
-function getFunctionUrl() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  if (!baseUrl) {
-    throw new Error("VITE_SUPABASE_URL לא מוגדר");
-  }
-  return `${baseUrl}/functions/v1/create-commander-camp`;
-}
-
 export async function createCommanderOnboarding(
   payload: CommanderOnboardingPayload,
 ): Promise<CommanderOnboardingResult> {
-  const webhookSecret = import.meta.env.VITE_COMMANDER_WEBHOOK_SECRET;
-  if (!webhookSecret) {
-    throw new Error("VITE_COMMANDER_WEBHOOK_SECRET לא מוגדר");
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!baseUrl || !anonKey) {
+    throw new Error("Missing Supabase config");
   }
 
-  const res = await fetch(getFunctionUrl(), {
+  const res = await fetch(`${baseUrl}/functions/v1/create-commander-camp`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-webhook-secret": webhookSecret,
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
+      "x-form-password": payload.onboardingPassword.trim(),
     },
     body: JSON.stringify({
       source_ref: payload.sourceRef.trim(),
@@ -46,10 +44,10 @@ export async function createCommanderOnboarding(
     }),
   });
 
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.ok) {
-    throw new Error(json?.error || "יצירת הרשמה פנימית נכשלה");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data?.ok) {
+    throw new Error(data?.error || "יצירת הרשמה פנימית נכשלה");
   }
 
-  return json as CommanderOnboardingResult;
+  return data as CommanderOnboardingResult;
 }

@@ -14,7 +14,7 @@ type OnboardRequest = {
 const jsonHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "content-type, x-webhook-secret",
+  "Access-Control-Allow-Headers": "content-type, authorization, apikey, x-form-password",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -35,13 +35,13 @@ Deno.serve(async (req: Request) => {
     return response(405, { ok: false, error: "Method not allowed" });
   }
 
-  const webhookSecret = Deno.env.get("COMMANDER_WEBHOOK_SECRET");
-  if (!webhookSecret) {
-    return response(500, { ok: false, error: "Missing COMMANDER_WEBHOOK_SECRET" });
+  const expectedPassword = Deno.env.get("INTERNAL_ONBOARDING_PASSWORD");
+  if (!expectedPassword) {
+    return response(500, { ok: false, error: "Missing INTERNAL_ONBOARDING_PASSWORD" });
   }
 
-  const providedSecret = req.headers.get("x-webhook-secret") ?? "";
-  if (providedSecret !== webhookSecret) {
+  const providedPassword = req.headers.get("x-form-password")?.trim() ?? "";
+  if (!providedPassword || providedPassword !== expectedPassword) {
     return response(401, { ok: false, error: "Unauthorized" });
   }
 

@@ -18,6 +18,7 @@ export default function CommanderOnboardingPage() {
   const [campName, setCampName] = useState("");
   const [commanderId, setCommanderId] = useState("");
   const [commanderPhone, setCommanderPhone] = useState("");
+  const [onboardingPassword, setOnboardingPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
   const [registrationCode, setRegistrationCode] = useState("");
@@ -28,9 +29,10 @@ export default function CommanderOnboardingPage() {
       !fullName.trim() ||
       !campName.trim() ||
       !commanderId.trim() ||
-      !commanderPhone.trim()
+      !commanderPhone.trim() ||
+      !onboardingPassword.trim()
     );
-  }, [isLoading, fullName, campName, commanderId, commanderPhone]);
+  }, [isLoading, fullName, campName, commanderId, commanderPhone, onboardingPassword]);
 
   const handleSubmit = async () => {
     if (isDisabled) return;
@@ -44,6 +46,7 @@ export default function CommanderOnboardingPage() {
         campName,
         commanderId,
         commanderPhone,
+        onboardingPassword,
       });
 
       const origin = window.location.origin;
@@ -102,6 +105,14 @@ export default function CommanderOnboardingPage() {
             label="נייד מפקד"
             value={commanderPhone}
             onChange={(e) => setCommanderPhone(e.target.value)}
+          />
+          <TextField
+            fullWidth
+            type="password"
+            label="סיסמת מנהל מערכת"
+            value={onboardingPassword}
+            onChange={(e) => setOnboardingPassword(e.target.value)}
+            helperText="סיסמה פרטית ליצירת משתמשי מפקד חדשים"
           />
 
           <Button variant="contained" disabled={isDisabled} onClick={handleSubmit}>

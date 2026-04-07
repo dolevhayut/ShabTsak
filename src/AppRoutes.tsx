@@ -48,7 +48,6 @@ export default function AppRoutes() {
                             <Route path={ROUTES.GUARD_PROFILE} element={<GuardProfile/>}/>
                             <Route path={ROUTES.SHIFT_REQUESTS} element={<ShiftRequestsPage/>}/>
                             <Route path={ROUTES.COMMANDER_AI} element={<CommanderAiPage/>}/>
-                            <Route path={ROUTES.COMMANDER_ONBOARDING} element={<CommanderOnboardingPage/>}/>
                             <Route path={ROUTES.SYSTEM_MESSAGES} element={<SystemMessagesPage/>}/>
                         </Route>
                     </Route>
@@ -57,6 +56,7 @@ export default function AppRoutes() {
                         <Route path={ROUTES.TERMS} element={<TermsPage/>}/>
                         <Route path={ROUTES.LOGIN} element={<LoginPage/>}/>
                         <Route path={ROUTES.REGISTER} element={<RegisterPage/>}/>
+                        <Route path={ROUTES.COMMANDER_ONBOARDING} element={<CommanderOnboardingPage/>}/>
                         <Route path={ROUTES.LANDING} element={<LandingPage/>}/>
                         <Route path="*" element={<NotFound/>}/>
                     </Route>
