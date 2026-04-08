@@ -76,18 +76,23 @@ export async function getShibutsimOfCurrentMonthByCampId(campId, shibutsDates) {
     }
 }
 
-export async function getAutoShibutsimByCampIdAndDates(campId, shibutsDates) {
+export async function getAutoShibutsimByCampIdAndDates(campId, shibutsDates, outpostIds) {
     try {
         const creds = getCredentials();
         const startTs = shibutsDates[0].getTime();
         const endTs = shibutsDates[1].getTime();
 
-        const { data, error } = await supabase.rpc("rpc_auto_assign", {
+        const params = {
             ...creds,
             p_camp_id: campId,
             p_start_ts: startTs,
             p_end_ts: endTs,
-        });
+        };
+        if (Array.isArray(outpostIds) && outpostIds.length > 0) {
+            params.p_outpost_ids = outpostIds;
+        }
+
+        const { data, error } = await supabase.rpc("rpc_auto_assign", params);
         if (error) throw error;
 
         const count = data?.length ?? 0;
