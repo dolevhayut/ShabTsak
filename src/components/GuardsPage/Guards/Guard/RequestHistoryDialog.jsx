@@ -19,9 +19,9 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import HourglassEmptyOutlinedIcon from "@mui/icons-material/HourglassEmptyOutlined";
 import DoDisturbAltOutlinedIcon from "@mui/icons-material/DoDisturbAltOutlined";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { format } from "date-fns";
 import { getShiftRequestsByGuardId } from "@/services/shiftRequestService";
-import { getGravatarUrl } from "../../../GuardProfile/GuardProfileLimits/utils.js";
 
 const STATUS_CONFIG = {
   pending: {
@@ -113,10 +113,11 @@ const RequestHistoryDialog = ({ open, onClose, guard }) => {
         >
           <Stack direction="row" alignItems="center" gap={1.5}>
             <Avatar
-              src={getGravatarUrl(guard?.mail)}
               alt={guard?.name}
               sx={{ width: 38, height: 38 }}
-            />
+            >
+              <PersonRoundedIcon />
+            </Avatar>
             <Box>
               <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
                 {guard?.name}

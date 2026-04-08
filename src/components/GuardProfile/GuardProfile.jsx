@@ -1,6 +1,5 @@
 import { useLocation, useParams } from "react-router-dom";
 import { Card, CardContent, Typography, Avatar, Stack } from "@mui/material";
-import { getGravatarUrl } from "./GuardProfileLimits/utils.js";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import GuardProfileTimeLimitForm from "components/GuardProfile/GuardProfileLimits/GuardProfileTimeLimit/GuardProfileTimeLimitForm/GuardProfileTimeLimitForm.jsx";
 import GuardProfileTimeLimitTable from "components/GuardProfile/GuardProfileLimits/GuardProfileTimeLimit/GuardProfileTimeLimitTable/GuardProfileTimeLimitTable.jsx";
@@ -17,6 +16,7 @@ import { Box } from "@mui/system";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle.js";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked.js";
 import { useIsCommander } from "@/hooks/useIsCommander";
+import { getTeamAccentColor } from "@/components/GuardsPage/Guards/Guard/teamColor";
 
 const GuardProfile = () => {
   const { state } = useLocation();
@@ -46,19 +46,17 @@ const GuardProfile = () => {
     return "Loading...";
   }
 
+  const hasTeam = Boolean(guard.team?.trim());
+  const joinedAt = guard.joinedAt || "—";
+
   return (
     <Card style={{ minWidth: 450, maxWidth: 700, margin: "auto", marginTop: "20px", padding: "16px" }}>
       <CardContent>
         <Avatar
-          src={getGravatarUrl(guard.mail)}
           alt={guard.name}
           style={{ width: "80px", height: "80px", margin: "0 auto 0.5em" }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = MilitaryTechIcon;
-          }}
         >
-          {!getGravatarUrl(guard.mail) && <MilitaryTechIcon fontSize="large" />}
+          <MilitaryTechIcon fontSize="large" />
         </Avatar>
         <Typography variant="h6" component="h2" textAlign="center" gutterBottom>
           {guard.name}
@@ -70,6 +68,32 @@ const GuardProfile = () => {
           <Typography variant="body1" fontWeight={500}>
             {guard.shouldBeAllocated ? "משתתף" : "לא משתתף"}
           </Typography>
+        </Stack>
+        <Stack spacing={0.8} sx={{ mb: 2 }}>
+          <Stack direction="row" alignItems="center" gap={1}>
+            <Typography variant="body2" color="text.secondary">תפקיד:</Typography>
+            <Typography variant="body2" fontWeight={500}>{guard.role || "—"}</Typography>
+          </Stack>
+          <Stack direction="row" alignItems="center" gap={1}>
+            <Typography variant="body2" color="text.secondary">צוות:</Typography>
+            <Typography
+              variant="body2"
+              fontWeight={500}
+              sx={hasTeam ? { px: 0.8, borderRadius: 1, border: "1px solid", borderColor: getTeamAccentColor(guard.team) } : undefined}
+            >
+              {guard.team || "—"}
+            </Typography>
+          </Stack>
+          <Stack direction="row" alignItems="center" gap={1}>
+            <Typography variant="body2" color="text.secondary">הצטרף בתאריך:</Typography>
+            <Typography variant="body2" fontWeight={500}>{joinedAt}</Typography>
+          </Stack>
+          <Stack direction="column" gap={0.2}>
+            <Typography variant="body2" color="text.secondary">הערות:</Typography>
+            <Typography variant="body2" fontWeight={500} sx={{ whiteSpace: "pre-wrap" }}>
+              {guard.notes || "—"}
+            </Typography>
+          </Stack>
         </Stack>
         <GuardProfileContact mail={guard.mail} phone={guard.phone} />
         <Typography variant="h6" component="h3" sx={{ mt: 1 }}>

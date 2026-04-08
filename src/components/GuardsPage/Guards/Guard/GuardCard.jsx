@@ -20,11 +20,12 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
-import { getGravatarUrl } from "../../../GuardProfile/GuardProfileLimits/utils.js";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { useNavigate } from "react-router-dom";
 import ShiftHistoryDialog from "./ShiftHistoryDialog";
 import RequestHistoryDialog from "./RequestHistoryDialog";
 import { useIsCommander } from "@/hooks/useIsCommander";
+import { getTeamAccentColor } from "./teamColor";
 
 const GuardCard = ({ campId, guard, onEdit, onDelete, index }) => {
   const navigate = useNavigate();
@@ -33,13 +34,16 @@ const GuardCard = ({ campId, guard, onEdit, onDelete, index }) => {
   const [requestHistoryOpen, setRequestHistoryOpen] = useState(false);
   const emailValue = guard.mail?.trim() ? guard.mail : "—";
   const phoneValue = guard.phone?.trim() ? guard.phone : "—";
+  const hasTeam = Boolean(guard.team?.trim());
+  const teamAccentColor = hasTeam ? getTeamAccentColor(guard.team) : "divider";
 
   return (
     <Paper
       elevation={0}
       sx={{
         border: "1px solid",
-        borderColor: "divider",
+        borderColor: teamAccentColor,
+        borderInlineStartWidth: hasTeam ? 4 : 1,
         borderRadius: "10px",
         overflow: "hidden",
         transition: "box-shadow 0.18s ease, border-color 0.18s ease",
@@ -59,10 +63,11 @@ const GuardCard = ({ campId, guard, onEdit, onDelete, index }) => {
           {/* צד ימין: אווטר + פרטי שם */}
           <Stack direction="row" alignItems="center" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
             <Avatar
-              src={getGravatarUrl(guard.mail)}
               alt={guard.name}
               sx={{ width: 46, height: 46, flexShrink: 0 }}
-            />
+            >
+              <PersonRoundedIcon />
+            </Avatar>
             <Box sx={{ minWidth: 0 }}>
               <Stack direction="row" alignItems="center" gap={0.75} flexWrap="nowrap">
                 <Typography
@@ -106,6 +111,22 @@ const GuardCard = ({ campId, guard, onEdit, onDelete, index }) => {
                   "& .MuiChip-icon": { ml: "4px", mr: "-2px" },
                 }}
               />
+              {hasTeam && (
+                <Chip
+                  size="small"
+                  label={`צוות: ${guard.team}`}
+                  variant="outlined"
+                  sx={{
+                    mt: 0.5,
+                    height: 20,
+                    fontSize: "0.68rem",
+                    fontWeight: 500,
+                    borderColor: teamAccentColor,
+                    color: "text.primary",
+                    "& .MuiChip-label": { px: 0.75 },
+                  }}
+                />
+              )}
             </Box>
           </Stack>
 

@@ -8,12 +8,22 @@ import { toast } from "@/services/notificationService";
 import {useMutation, useQueryClient} from "react-query";
 import { addNewGuard, updateGuard } from "@/services/guardService.js";
 
+const getEditDefaultValues = (guardDetails = {}) => ({
+  ...getDefaultValues(),
+  ...guardDetails,
+  personalId: guardDetails.personalId ?? "",
+  role: guardDetails.role ?? "",
+  notes: guardDetails.notes ?? "",
+  joinedAt: guardDetails.joinedAt ?? "",
+  team: guardDetails.team ?? "",
+});
+
 export default function GuardDialogAddOrEdit({ guardDetails, campId, method, open, close }) {
   const queryClient = useQueryClient();
   const isEditing = method === "PUT";
 
   const { handleSubmit, register, control, reset, formState } = useForm({
-    defaultValues: { ...(isEditing ? guardDetails : getDefaultValues()), campId },
+    defaultValues: { ...(isEditing ? getEditDefaultValues(guardDetails) : getDefaultValues()), campId },
     resolver: yupResolver(schema),
   });
 
@@ -64,7 +74,7 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
   // Function to handle closing the dialog.
   function handleCloseDialog() {
     close();
-    reset(isEditing ? guardDetails : getDefaultValues());
+    reset(isEditing ? getEditDefaultValues(guardDetails) : getDefaultValues());
   }
 
   return (
@@ -85,6 +95,44 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
             inputProps={{ maxLength: 20, style: { fontFamily: "ui-monospace, monospace", letterSpacing: "0.04em" } }}
             {...register("personalId")}
             helperText={<FormError error={formState.errors?.personalId?.message} />}
+          />
+          <TextField
+            margin="dense"
+            label="תפקיד"
+            type="text"
+            fullWidth
+            InputProps={{ inputProps: { maxLength: 80 } }}
+            {...register("role")}
+            helperText={<FormError error={formState.errors?.role?.message} />}
+          />
+          <TextField
+            margin="dense"
+            label="צוות"
+            type="text"
+            fullWidth
+            InputProps={{ inputProps: { maxLength: 80 } }}
+            {...register("team")}
+            helperText={<FormError error={formState.errors?.team?.message} />}
+          />
+          <TextField
+            margin="dense"
+            label="הצטרף בתאריך"
+            type="date"
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            {...register("joinedAt")}
+            helperText={<FormError error={formState.errors?.joinedAt?.message} />}
+          />
+          <TextField
+            margin="dense"
+            label="הערות"
+            type="text"
+            fullWidth
+            multiline
+            minRows={3}
+            InputProps={{ inputProps: { maxLength: 1000 } }}
+            {...register("notes")}
+            helperText={<FormError error={formState.errors?.notes?.message} />}
           />
           <TextField
             margin="dense"
@@ -141,6 +189,7 @@ FormError.propTypes = {
 };
 
 GuardDialogAddOrEdit.propTypes = {
+  guardDetails: PropTypes.object,
   campId: PropTypes.number.isRequired,
   method: PropTypes.oneOf(["PUT", "POST", "DELETE"]).isRequired,
   open: PropTypes.bool.isRequired,

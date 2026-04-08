@@ -10,6 +10,10 @@ export const getDefaultValues = () => ({
     mail: "",
     phone: "",
     personalId: "",
+    role: "",
+    notes: "",
+    joinedAt: "",
+    team: "",
     color: randomColor(),
     shouldBeAllocated: true,
 })

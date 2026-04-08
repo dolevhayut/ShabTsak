@@ -1,20 +1,22 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
-import { TableCell, TableRow, IconButton, Button, Avatar, Stack, Box, Typography, Tooltip } from "@mui/material";
+import { TableCell, TableRow, IconButton, Button, Avatar, Stack, Box, Typography, Tooltip, Chip } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
-import { getGravatarUrl } from "../../../GuardProfile/GuardProfileLimits/utils.js";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { useNavigate } from "react-router-dom";
 import ShiftHistoryDialog from "./ShiftHistoryDialog";
+import { getTeamAccentColor } from "./teamColor";
 
 const Guard = ({ campId, guard, onEdit, onDelete, index }) => {
   const navigate = useNavigate();
   const [historyOpen, setHistoryOpen] = useState(false);
   const emailValue = guard.mail?.trim() ? guard.mail : "—";
   const phoneValue = guard.phone?.trim() ? guard.phone : "—";
+  const hasTeam = Boolean(guard.team?.trim());
 
   const handleLimitButtonClick = () => {
     navigate(`/guards/${guard.id}`, { state: { campId: campId } });
@@ -27,21 +29,37 @@ const Guard = ({ campId, guard, onEdit, onDelete, index }) => {
       <TableCell sx={{ py: 1.25 }}>{index + 1}</TableCell>
       <TableCell sx={{ py: 1.25 }}>
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-          <Avatar src={getGravatarUrl(guard.mail)} alt={guard.name} sx={{ width: 36, height: 36 }} />
+          <Avatar alt={guard.name} sx={{ width: 36, height: 36 }}>
+            <PersonRoundedIcon />
+          </Avatar>
         </Box>
       </TableCell>
       <TableCell sx={{ py: 1.25, maxWidth: 0 }}>
-        <Typography
-          sx={{
-            fontWeight: 700,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-          title={guard.name}
-        >
-          {guard.name}
-        </Typography>
+        <Stack direction="column" alignItems="flex-end" spacing={0.5}>
+          <Typography
+            sx={{
+              fontWeight: 700,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={guard.name}
+          >
+            {guard.name}
+          </Typography>
+          {hasTeam && (
+            <Chip
+              size="small"
+              label={`צוות: ${guard.team}`}
+              variant="outlined"
+              sx={{
+                height: 20,
+                borderColor: getTeamAccentColor(guard.team),
+                fontSize: "0.7rem",
+              }}
+            />
+          )}
+        </Stack>
       </TableCell>
       <TableCell align="center" sx={{ py: 1.25 }}>
         <Box

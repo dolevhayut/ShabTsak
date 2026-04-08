@@ -61,6 +61,10 @@ export async function addNewGuard(newGuardDetails) {
             p_camp_id: newGuardDetails.campId,
             p_color: newGuardDetails.color || null,
             p_personal_id: newGuardDetails.personalId || null,
+            p_role: newGuardDetails.role || null,
+            p_notes: newGuardDetails.notes || null,
+            p_joined_at: newGuardDetails.joinedAt || null,
+            p_team: newGuardDetails.team || null,
         });
         if (error) throw error;
         return { data: { id: data }, status: 201 };
@@ -81,6 +85,10 @@ export async function updateGuard(guardDetails) {
             p_should_be_allocated: guardDetails.shouldBeAllocated ?? true,
             p_color: guardDetails.color || null,
             p_personal_id: guardDetails.personalId || null,
+            p_role: guardDetails.role || null,
+            p_notes: guardDetails.notes || null,
+            p_joined_at: guardDetails.joinedAt || null,
+            p_team: guardDetails.team || null,
         });
         if (error) throw error;
         return { data: guardDetails, status: 200 };

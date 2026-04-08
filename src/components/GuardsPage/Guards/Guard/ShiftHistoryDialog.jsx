@@ -19,6 +19,7 @@ import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -26,7 +27,6 @@ import TextField from "@mui/material/TextField";
 import dayjs from "dayjs";
 import { getShibutsimByGuardAndCamp } from "@/services/shibutsService";
 import { getOutpostsByCampId } from "@/services/outpostService";
-import { getGravatarUrl } from "../../../GuardProfile/GuardProfileLimits/utils.js";
 
 const DAY_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
@@ -151,10 +151,11 @@ const ShiftHistoryDialog = ({ open, onClose, guard, campId }) => {
         >
           <Stack direction="row" alignItems="center" gap={1.5}>
             <Avatar
-              src={getGravatarUrl(guard?.mail)}
               alt={guard?.name}
               sx={{ width: 38, height: 38 }}
-            />
+            >
+              <PersonRoundedIcon />
+            </Avatar>
             <Box>
               <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
                 {guard?.name}
