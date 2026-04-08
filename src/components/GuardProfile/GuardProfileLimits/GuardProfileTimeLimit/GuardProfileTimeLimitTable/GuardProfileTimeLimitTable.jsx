@@ -2,6 +2,13 @@ import { getDayName } from "../../utils.js";
 import { Table, TableBody, TableHead, TableRow, TableCell, IconButton } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 
+const formatDecimalHour = (hourValue) => {
+  const hour = Number(hourValue ?? 0);
+  const hh = Math.floor(hour);
+  const mm = Math.round((hour - hh) * 60);
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+};
+
 const GuardProfileTimeLimitTable = ({ timeLimits, handleDelete }) => {
   return (
     <Table size="small">
@@ -17,8 +24,8 @@ const GuardProfileTimeLimitTable = ({ timeLimits, handleDelete }) => {
         {timeLimits.map((limit) => (
           <TableRow key={limit.id}>
             <TableCell>{getDayName(limit.dayId)}</TableCell>
-            <TableCell>{String(limit.fromHour).padStart(2, "0")}:00</TableCell>
-            <TableCell>{String(limit.toHour).padStart(2, "0")}:00</TableCell>
+            <TableCell>{formatDecimalHour(limit.fromHour)}</TableCell>
+            <TableCell>{formatDecimalHour(limit.toHour)}</TableCell>
             <TableCell>
               <IconButton aria-label="delete" color="error" onClick={() => handleDelete(limit.id)}>
                 <DeleteIcon />

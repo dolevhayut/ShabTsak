@@ -15,6 +15,7 @@ import {
     InputLabel,
     FormControl,
     Stack,
+    TextField,
 } from "@mui/material";
 import { theme } from "@/theme/theme";
 import { toast } from "@/services/notificationService";
@@ -22,10 +23,28 @@ import {
     createOrUpdateShift, deleteShift,
     getShiftsByOutpostId,
 } from "@/services/shiftService.js";
-import { daysOfWeekHebrew, hourArr } from "@/utils/dateUtils";
+import { daysOfWeekHebrew } from "@/utils/dateUtils";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useState } from "react";
+
+const TIME_REGEX = /^(?:([01]\d|2[0-3]):([0-5]\d)|24:00)$/;
+
+function toHourNumber(timeValue) {
+    const [hours, minutes] = timeValue.split(":").map(Number);
+    return hours + (minutes / 60);
+}
+
+function formatHourToTime(hourValue) {
+    const num = Number(hourValue);
+    if (!Number.isFinite(num)) return "08:00";
+    if (num === 24) return "24:00";
+
+    const totalMinutes = Math.round(num * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
 
 function ShiftDialog({ onCloseDialog, method, item }) {
     const queryClient = useQueryClient();
@@ -55,7 +74,6 @@ function ShiftDialog({ onCloseDialog, method, item }) {
             (from >= shift.fromHour && to <= shift.toHour)));
     }
 
-    console.log(shifts);
     const schema = yup.object().shape(
             {
                 dayId:
@@ -65,19 +83,25 @@ function ShiftDialog({ onCloseDialog, method, item }) {
                        .required()
                        .test("is-unique-shift", `משמרת כבר קיימת`, async function (value) {
                            const { fromHour, toHour } = this.parent;
+                           const fromHourNumber = toHourNumber(fromHour);
+                           const toHourNumberValue = toHourNumber(toHour);
                            const shiftExists = shifts?.filter((shift) => {
-                               return value.includes(shift.dayId) && isConflictingShift(shift, fromHour, toHour);
+                               return value.includes(shift.dayId) && isConflictingShift(shift, fromHourNumber, toHourNumberValue);
                            });
                            setShiftExistIndexes([...new Set(shiftExists?.map(({ dayId }) => dayId - 1))] || []);
                            return shiftExists?.length === 0;
                        }),
                 fromHour:
-                    yup.number().min(0).max(24).required(),
+                    yup.string()
+                       .required("חובה למלא שעה")
+                       .matches(TIME_REGEX, "פורמט שעה לא תקין (HH:mm)"),
                 toHour:
-                    yup.number().min(0).max(24).required()
+                    yup.string()
+                       .required("חובה למלא שעה")
+                       .matches(TIME_REGEX, "פורמט שעה לא תקין (HH:mm)")
                        .test("is-greater", "שעת הסיום חייבת להיות מאוחרת משעת ההתחלה", async function (value) {
                            const { fromHour } = this.parent;
-                           return value > fromHour;
+                           return toHourNumber(value) > toHourNumber(fromHour);
                        }),
             }
         )
@@ -91,8 +115,8 @@ function ShiftDialog({ onCloseDialog, method, item }) {
     } = useForm({
         defaultValues: {
             dayId: method === "PUT" ? [Number(item.dayId)] : [],
-            fromHour: item ? Number(item.fromHour) : 8,
-            toHour: item ? Number(item.toHour) : 11,
+            fromHour: item ? formatHourToTime(item.fromHour) : "08:00",
+            toHour: item ? formatHourToTime(item.toHour) : "11:00",
             outpostId,
             ...(method === "PUT" && { id: item.id }),
         },
@@ -105,13 +129,16 @@ function ShiftDialog({ onCloseDialog, method, item }) {
             return;
         }
         try {
+            const fromHourNumber = toHourNumber(fromHour);
+            const toHourNumberValue = toHourNumber(toHour);
+
             if (method === "PUT") {
                 await deleteShift(item.id);
             }
             await Promise.all(dayId.map((day) => {
                 return createOrUpdateShift({
-                    fromHour,
-                    toHour,
+                    fromHour: fromHourNumber,
+                    toHour: toHourNumberValue,
                     outpostId,
                     dayId: day,
                 });
@@ -175,58 +202,25 @@ function ShiftDialog({ onCloseDialog, method, item }) {
                             </FormHelperText>
                         </FormControl>
                         <Stack direction="row" gap={2} sx={{ "&>*": { flex: 1 }, marginTop: "1.5em" }}>
-                            <FormControl>
-                                <InputLabel id="select-label-fromHour">משעה</InputLabel>
-                                <Select
-                                    labelId="select-label-fromHour"
-                                    id="demo-simple-select"
-                                    {...register("fromHour", {
-                                        required: { value: true, message: "חובה למלא שעה" },
-                                        min: { value: 1, message: "מנימום שעה 1:00" },
-                                        max: { value: 24, message: "מקסימום שעה 24:00" },
-                                    })}
-                                    label="משעה"
-                                    defaultValue={item ? item.fromHour : 8}
-                                >
-                                    {hourArr.map((hour, index) => (
-                                        <MenuItem
-                                            key={index}
-                                            value={hour}
-                                        >
-                                            {hour}:00
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <FormControl fullWidth>
-                                <InputLabel id="select-label-toHour">עד שעה</InputLabel>
-                                <Select
-                                    labelId="select-label-toHour"
-                                    id="demo-simple-select"
-                                    {...register("toHour", {
-                                        required: { value: true, message: "חובה למלא שעה" },
-                                    })}
-                                    label="עד שעה"
-                                    defaultValue={item ? item.toHour : 11}
-                                >
-                                    {hourArr.map((hour, index) => (
-                                        <MenuItem
-                                            key={index}
-                                            value={hour}
-                                        >
-                                            {hour}:00
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                                {/*<FormHelperText error={!!errors?.toHour}>*/}
-                                {/*    {errors?.toHour && errors?.toHour?.message}*/}
-                                {/*</FormHelperText>*/}
-                            </FormControl>
+                            <TextField
+                                label="משעה"
+                                placeholder="05:45"
+                                fullWidth
+                                {...register("fromHour")}
+                                error={!!errors?.fromHour}
+                            />
+                            <TextField
+                                label="עד שעה"
+                                placeholder="07:45"
+                                fullWidth
+                                {...register("toHour")}
+                                error={!!errors?.toHour}
+                            />
                         </Stack>
 
                         {/* error message fromHour */}
-                        <FormHelperText error={!!errors?.toHour} sx={{ height: "1.5em", paddingInlineStart: "1em" }}>
-                            {errors?.toHour && errors?.toHour?.message}
+                        <FormHelperText error={!!errors?.fromHour || !!errors?.toHour} sx={{ height: "1.5em", paddingInlineStart: "1em" }}>
+                            {errors?.fromHour?.message || errors?.toHour?.message}
                         </FormHelperText>
                     </DialogContent>
 

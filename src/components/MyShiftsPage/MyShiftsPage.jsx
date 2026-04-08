@@ -35,6 +35,20 @@ const requestTypeLabels = {
   swap: "בקשת החלפה",
 };
 
+function formatDecimalHour(hourValue) {
+  const hour = Number(hourValue ?? 0);
+  const hours = Math.floor(hour);
+  const minutes = Math.round((hour - hours) * 60);
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function setDateFromDecimalHour(date, decimalHour) {
+  const value = Number(decimalHour ?? 0);
+  const hours = Math.floor(value);
+  const minutes = Math.round((value - hours) * 60);
+  date.setHours(hours, minutes, 0, 0);
+}
+
 function MyShiftsPage() {
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
@@ -97,8 +111,8 @@ function MyShiftsPage() {
       const date = new Date(item.theDate);
       const start = new Date(item.theDate);
       const end = new Date(item.theDate);
-      start.setHours(shift?.fromHour || 0, 0, 0, 0);
-      end.setHours(shift?.toHour || 0, 0, 0, 0);
+      setDateFromDecimalHour(start, shift?.fromHour || 0);
+      setDateFromDecimalHour(end, shift?.toHour || 0);
       if ((shift?.toHour || 0) <= (shift?.fromHour || 0)) {
         end.setDate(end.getDate() + 1);
       }
@@ -108,7 +122,7 @@ function MyShiftsPage() {
         start,
         end,
         outpostName: outpost?.name || "עמדה לא ידועה",
-        shiftLabel: `${String(shift?.fromHour ?? 0).padStart(2, "0")}:00-${String(shift?.toHour ?? 0).padStart(2, "0")}:00`,
+        shiftLabel: `${formatDecimalHour(shift?.fromHour ?? 0)}-${formatDecimalHour(shift?.toHour ?? 0)}`,
       };
     });
   }, [myShibuts, shiftById, outpostById]);

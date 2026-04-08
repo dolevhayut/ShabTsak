@@ -63,7 +63,10 @@ function formatShiftRequestStatus(status) {
 }
 
 function formatHour(h) {
-  return String(h).padStart(2, "0") + ":00";
+  const hour = Number(h ?? 0);
+  const hh = Math.floor(hour);
+  const mm = Math.round((hour - hh) * 60);
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
 function formatTs(ts) {
@@ -213,7 +216,7 @@ const ShiftRequestsPage = () => {
           resolvedShiftInfo = {
             guardName: shibutsGuard?.name || `שומר #${resolvedShibuts.guardId}`,
             outpostName: shiftData?.outpostName || outpostMapLocal.get(resolvedShibuts.outpostId) || `עמדה #${resolvedShibuts.outpostId}`,
-            hours: shiftData ? `${String(shiftData.fromHour).padStart(2,"0")}:00–${String(shiftData.toHour).padStart(2,"0")}:00` : "—",
+            hours: shiftData ? `${formatHour(shiftData.fromHour)}–${formatHour(shiftData.toHour)}` : "—",
             date: resolvedShibuts.theDate
               ? new Date(Number(resolvedShibuts.theDate)).toLocaleDateString("he-IL")
               : "—",

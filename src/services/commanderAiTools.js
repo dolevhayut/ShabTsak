@@ -8,6 +8,13 @@ import { getCredentials } from "./authCredentials";
 
 const DAY_NAMES = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
+function formatDecimalHour(hourValue) {
+  const hour = Number(hourValue ?? 0);
+  const hh = Math.floor(hour);
+  const mm = Math.round((hour - hh) * 60);
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 // ─── Tool Schemas ──────────────────────────────────────────────────────────────
 
 export const COMMANDER_TOOLS = [
@@ -190,8 +197,8 @@ async function listGuards({ camp_id }) {
       .map((l) => ({
         day: DAY_NAMES[(l.dayId ?? 1) - 1],
         dayId: l.dayId,
-        from: `${l.fromHour}:00`,
-        to: `${l.toHour}:00`,
+        from: formatDecimalHour(l.fromHour),
+        to: formatDecimalHour(l.toHour),
       })),
     dayLimits: dayLimits
       .filter((l) => l.guardId === g.id)
@@ -235,7 +242,7 @@ async function listAssignments({ camp_id, guard_id, date_from, date_to }) {
     outpostId: s.outpostId,
     shiftId: s.shiftId,
     day: DAY_NAMES[(s.shifts?.dayId ?? 1) - 1],
-    hours: s.shifts ? `${s.shifts.fromHour}:00-${s.shifts.toHour}:00` : "?",
+    hours: s.shifts ? `${formatDecimalHour(s.shifts.fromHour)}-${formatDecimalHour(s.shifts.toHour)}` : "?",
     date: new Date(Number(s.theDate)).toLocaleDateString("he-IL"),
     dateEpoch: s.theDate,
   }));
@@ -266,8 +273,8 @@ async function listShifts({ camp_id, outpost_id }) {
     outpostId: s.outpostId,
     day: DAY_NAMES[(s.dayId ?? 1) - 1],
     dayId: s.dayId,
-    from: `${s.fromHour}:00`,
-    to: `${s.toHour}:00`,
+    from: formatDecimalHour(s.fromHour),
+    to: formatDecimalHour(s.toHour),
   }));
 }
 
@@ -351,7 +358,7 @@ async function checkGuardAvailability({ guard_id, shift_id, camp_id, date_epoch_
     .forEach((l) => {
       if (shift.fromHour >= l.fromHour && shift.toHour <= l.toHour) {
         conflicts.push(
-          `אילוץ שעות: ${DAY_NAMES[(l.dayId ?? 1) - 1]} ${l.fromHour}:00-${l.toHour}:00`,
+          `אילוץ שעות: ${DAY_NAMES[(l.dayId ?? 1) - 1]} ${formatDecimalHour(l.fromHour)}-${formatDecimalHour(l.toHour)}`,
         );
       }
     });

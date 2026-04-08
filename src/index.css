@@ -108,6 +108,11 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
 }
 .rbc-event {
   font-size: 0.95rem !important;
+  overflow: visible !important;
+}
+.rbc-event-content {
+  overflow: visible !important;
+  width: 100% !important;
 }
 .rbc-event-label {
   font-size: 0.9rem !important;

@@ -27,11 +27,14 @@ export const getDayOfWeekHebrew = (number) => {
 };
 
 export const getTimeStr = (hour) => {
-    let hourstr = "";
-    if(hour != undefined){
-        hourstr = format(new Date().setHours(hour, 0, 0, 0), 'HH:mm')
-    }
-    return hourstr;
+    if (hour == undefined) return "";
+    const hourNum = Number(hour);
+    if (!Number.isFinite(hourNum)) return "";
+    if (hourNum === 24) return "24:00";
+    const totalMinutes = Math.round(hourNum * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 export const getDayStr = (day) => {
@@ -51,11 +54,13 @@ export const getDayNumber = (day) => {
 }
 
 export const getHourNumber = (hour, endFlag) => {
-    let hourNum = "";
-    if(hour != undefined){
-        [hourNum] = hour.split(":").map(Number);
-        if(hourNum==0 && endFlag) hourNum=24;
+    if (hour == undefined) return "";
+    if (typeof hour === "number" && Number.isFinite(hour)) {
+        return hour;
     }
+    const [h, m = 0] = String(hour).split(":").map(Number);
+    let hourNum = h + (m / 60);
+    if (hourNum === 0 && endFlag) hourNum = 24;
     return hourNum;
 }
 
@@ -65,8 +70,10 @@ export const formatDate = (date, formatStr) => {
 
 export const getDateAndTime = (date, time, endFlag) => {
     let theDate = new Date(date);
-    let theTime = getHourNumber(time, endFlag);
-    theDate.setHours(theTime);
+    let theTime = Number(getHourNumber(time, endFlag));
+    const hours = Math.floor(theTime);
+    const minutes = Math.round((theTime - hours) * 60);
+    theDate.setHours(hours, minutes, 0, 0);
     return theDate;
 }
 

@@ -10,6 +10,19 @@ ShiftItem.propTypes = {
 
 export default function ShiftItem({ item, onDuplicateShift }) {
   const dayNumber = item.dayId;
+  const formatTime = (hourValue) => {
+    const numericHour = Number(hourValue);
+    if (!Number.isFinite(numericHour)) {
+      return "";
+    }
+    if (numericHour === 24) {
+      return "24:00";
+    }
+    const totalMinutes = Math.round(numericHour * 60);
+    const hourPart = Math.floor(totalMinutes / 60);
+    const minutePart = totalMinutes % 60;
+    return `${String(hourPart).padStart(2, "0")}:${String(minutePart).padStart(2, "0")}`;
+  };
 
   const dayHebrew = useMemo(() => {
     if (dayNumber) {
@@ -22,9 +35,9 @@ export default function ShiftItem({ item, onDuplicateShift }) {
     <TableRow>
       <TableCell align="center">{dayHebrew}</TableCell>
       <TableCell align="center" direction="asc">
-        {item.fromHour}:00
+        {formatTime(item.fromHour)}
       </TableCell>
-      <TableCell align="center">{item.toHour}:00</TableCell>
+      <TableCell align="center">{formatTime(item.toHour)}</TableCell>
 
       <TableCell
         align="center"

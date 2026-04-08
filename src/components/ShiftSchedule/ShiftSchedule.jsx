@@ -101,6 +101,13 @@ function toMinuteOfDay(date) {
   return date.getHours() * 60 + date.getMinutes();
 }
 
+function setDateFromDecimalHour(date, decimalHour) {
+  const safeHour = Number(decimalHour);
+  const hours = Math.floor(safeHour);
+  const minutes = Math.round((safeHour - hours) * 60);
+  date.setHours(hours, minutes, 0, 0);
+}
+
 function buildDatesFromOffsets(baseDate, startMinute, endMinute) {
   const dayStart = new Date(baseDate);
   dayStart.setHours(0, 0, 0, 0);
@@ -317,7 +324,7 @@ function ShiftSchedule() {
 
   const findClosestShift = useCallback(
     (outpost, start) => {
-      const clickedHour = new Date(start).getHours();
+      const clickedHour = new Date(start).getHours() + new Date(start).getMinutes() / 60;
       let shift = shifts.filter((s) => {
         if (s.resource != outpost) return false;
         if (getDayNumber(s.dayStr) != start.getDay()) return false;
@@ -443,7 +450,8 @@ function ShiftSchedule() {
           return true;
         }
         const outpostName = outposts.find((o) => o.id == shibuts.outpostId).name;
-        toast.error(`כבר קיים שיבוץ ל ${existShibuts[0].guardName} בעמדה ${outpostName} בשעה ${getTimeStr(existShibuts[0].end.getHours())}`);
+        const endHour = existShibuts[0].end.getHours() + existShibuts[0].end.getMinutes() / 60;
+        toast.error(`כבר קיים שיבוץ ל ${existShibuts[0].guardName} בעמדה ${outpostName} בשעה ${getTimeStr(endHour)}`);
         return true;
       }
       return false;
@@ -631,7 +639,8 @@ function ShiftSchedule() {
       );
       if (duplicate) {
         const outpostName = outposts.find((o) => o.id == shibutsToSave.outpostId)?.name || "";
-        toast.error(`כבר קיים שיבוץ ל ${duplicate.guardName} בעמדה ${outpostName} בשעה ${getTimeStr(duplicate.end.getHours())}`);
+        const duplicateEndHour = duplicate.end.getHours() + duplicate.end.getMinutes() / 60;
+        toast.error(`כבר קיים שיבוץ ל ${duplicate.guardName} בעמדה ${outpostName} בשעה ${getTimeStr(duplicateEndHour)}`);
         return;
       }
 
@@ -648,9 +657,9 @@ function ShiftSchedule() {
       const shift = findClosestShift(resourceId, slotInfo.start);
       if (shift != undefined) {
         const start = new Date(slotInfo.start);
-        start.setHours(getHourNumber(shift.start), 0, 0);
+        setDateFromDecimalHour(start, getHourNumber(shift.start));
         const end = new Date(slotInfo.start);
-        end.setHours(getHourNumber(shift.end, true), 0, 0);
+        setDateFromDecimalHour(end, getHourNumber(shift.end, true));
         if (end <= start) {
           end.setDate(end.getDate() + 1);
         }
@@ -919,12 +928,12 @@ function ShiftSchedule() {
 
           for (let i = 0; i < missing; i++) {
             const start = new Date(date);
-            start.setHours(shift.fromHour, 0, 0, 0);
+            setDateFromDecimalHour(start, shift.fromHour);
             const end = new Date(date);
             if (shift.toHour >= 24) {
               end.setHours(23, 59, 0, 0);
             } else {
-              end.setHours(shift.toHour, 0, 0, 0);
+              setDateFromDecimalHour(end, shift.toHour);
               if (end <= start) end.setDate(end.getDate() + 1);
             }
 
@@ -1076,12 +1085,13 @@ function ShiftSchedule() {
         <Box
           sx={{
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
+            flexDirection: "row-reverse",
+            alignItems: "center",
+            justifyContent: "space-between",
             height: "100%",
             px: 0.75,
-            py: 0.25,
-            gap: 0.25,
+            overflow: "visible",
+            width: "100%",
           }}
         >
           <Box
@@ -1093,13 +1103,39 @@ function ShiftSchedule() {
               overflow: "hidden",
               whiteSpace: "nowrap",
               textOverflow: "ellipsis",
+              minWidth: 0,
             }}
           >
             {event.title}
           </Box>
 
           {showActions && (
-            <Box sx={{ display: "flex", gap: 0.75, mt: 0.25 }}>
+            <Box sx={{ display: "flex", flexShrink: 0, gap: 1 }}>
+              <Tooltip title="מחק שיבוץ" placement="top">
+                <Box
+                  component="span"
+                  onClick={(e) => onDeleteIconClick(e, event)}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(255,255,255,0.3)",
+                    cursor: "pointer",
+                    transition: "background-color 0.15s, transform 0.15s",
+                    "&:hover": {
+                      backgroundColor: "rgba(255,80,80,0.85)",
+                      transform: "scale(1.15)",
+                    },
+                  }}
+                >
+                  <DeleteOutlineIcon
+                    sx={{ fontSize: 18, color: "rgba(0,0,0,0.6)" }}
+                  />
+                </Box>
+              </Tooltip>
               <Tooltip title="החלף שומר" placement="top">
                 <Box
                   component="span"
@@ -1108,8 +1144,8 @@ function ShiftSchedule() {
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: 28,
-                    height: 28,
+                    width: 26,
+                    height: 26,
                     borderRadius: "50%",
                     backgroundColor: isSwapSelected
                       ? "rgba(255,255,255,0.95)"
@@ -1126,34 +1162,9 @@ function ShiftSchedule() {
                 >
                   <SwapHorizIcon
                     sx={{
-                      fontSize: 20,
+                      fontSize: 18,
                       color: isSwapSelected ? "#1976d2" : swapSource ? "#1976d2" : "rgba(0,0,0,0.6)",
                     }}
-                  />
-                </Box>
-              </Tooltip>
-              <Tooltip title="מחק שיבוץ" placement="top">
-                <Box
-                  component="span"
-                  onClick={(e) => onDeleteIconClick(e, event)}
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    backgroundColor: "rgba(255,255,255,0.3)",
-                    cursor: "pointer",
-                    transition: "background-color 0.15s, transform 0.15s",
-                    "&:hover": {
-                      backgroundColor: "rgba(255,80,80,0.85)",
-                      transform: "scale(1.15)",
-                    },
-                  }}
-                >
-                  <DeleteOutlineIcon
-                    sx={{ fontSize: 20, color: "rgba(0,0,0,0.6)" }}
                   />
                 </Box>
               </Tooltip>
