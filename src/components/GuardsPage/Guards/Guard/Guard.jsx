@@ -20,49 +20,83 @@ const Guard = ({ campId, guard, onEdit, onDelete, index }) => {
     navigate(`/guards/${guard.id}`, { state: { campId: campId } });
   };
 
+  const emailIsEmpty = emailValue === "—";
+
   return (
     <TableRow>
-      <TableCell>
-        {index + 1}
-      </TableCell>
-      <TableCell>
-        <Box sx={{ display: "flex", justifyContent: "flex-end", pt: 0.5 }}>
-          <Avatar src={getGravatarUrl(guard.mail)} alt={guard.name} />
+      <TableCell sx={{ py: 1.25 }}>{index + 1}</TableCell>
+      <TableCell sx={{ py: 1.25 }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <Avatar src={getGravatarUrl(guard.mail)} alt={guard.name} sx={{ width: 36, height: 36 }} />
         </Box>
       </TableCell>
-      <TableCell>
-        <Stack spacing={0.75} sx={{ width: "100%" }}>
-          <Typography sx={{ fontWeight: 700, overflowWrap: "anywhere" }}>{guard.name}</Typography>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 0.75 }}>
-            <Typography component="span">צבע:</Typography>
-            <Box
-              component="span"
-              sx={{
-                width: 14,
-                height: 14,
-                borderRadius: "50%",
-                border: "1px solid #d1d5db",
-                display: "inline-block",
-                backgroundColor: guard.color || "#4B6B2A",
-              }}
-            />
-          </Box>
-          <Typography sx={{ overflowWrap: "anywhere" }}>
-            אימייל: {emailValue}
-          </Typography>
-          <Typography sx={{ overflowWrap: "anywhere" }}>
-            טלפון: {phoneValue}
-          </Typography>
-        </Stack>
+      <TableCell sx={{ py: 1.25, maxWidth: 0 }}>
+        <Typography
+          sx={{
+            fontWeight: 700,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={guard.name}
+        >
+          {guard.name}
+        </Typography>
       </TableCell>
-      <TableCell align="center">
-        <Box sx={{ display: "flex", justifyContent: "center", pt: 0.5 }}>
-          {guard.shouldBeAllocated ? <CheckCircleIcon style={{ color: "green" }} /> : <RadioButtonUncheckedIcon style={{ color: "grey" }} />}
-        </Box>
+      <TableCell align="center" sx={{ py: 1.25 }}>
+        <Box
+          component="span"
+          sx={{
+            width: 14,
+            height: 14,
+            borderRadius: "50%",
+            border: "1px solid",
+            borderColor: "divider",
+            display: "inline-block",
+            verticalAlign: "middle",
+            backgroundColor: guard.color || "#4B6B2A",
+          }}
+        />
       </TableCell>
-      <TableCell align="center">
-        <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5} sx={{ width: "100%" }}>
-          <Button onClick={handleLimitButtonClick} variant="outlined" color="primary" size="small">
+      <TableCell sx={{ py: 1.25, maxWidth: 0 }}>
+        <Tooltip title={!emailIsEmpty ? emailValue : ""} disableHoverListener={emailIsEmpty}>
+          <Typography
+            variant="body2"
+            color={emailIsEmpty ? "text.disabled" : "text.primary"}
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {emailValue}
+          </Typography>
+        </Tooltip>
+      </TableCell>
+      <TableCell sx={{ py: 1.25, maxWidth: 0 }} dir="ltr">
+        <Typography
+          variant="body2"
+          color={phoneValue === "—" ? "text.disabled" : "text.primary"}
+          sx={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            textAlign: "right",
+          }}
+        >
+          {phoneValue}
+        </Typography>
+      </TableCell>
+      <TableCell align="center" sx={{ py: 1.25 }}>
+        {guard.shouldBeAllocated ? (
+          <CheckCircleIcon sx={{ color: "success.main", fontSize: 22 }} />
+        ) : (
+          <RadioButtonUncheckedIcon sx={{ color: "text.disabled", fontSize: 22 }} />
+        )}
+      </TableCell>
+      <TableCell align="center" sx={{ py: 1.25 }}>
+        <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5} sx={{ flexWrap: "nowrap" }}>
+          <Button onClick={handleLimitButtonClick} variant="outlined" color="primary" size="small" sx={{ flexShrink: 0 }}>
             הגבלות
           </Button>
           <Tooltip title="היסטוריית משמרות">
