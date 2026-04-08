@@ -18,6 +18,8 @@ import {
   TableRow,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useQuery, useQueryClient } from "react-query";
 import { format } from "date-fns";
@@ -50,6 +52,8 @@ function setDateFromDecimalHour(date, decimalHour) {
 }
 
 function MyShiftsPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
   const [campId, setCampId] = useState(null);
@@ -214,45 +218,153 @@ function MyShiftsPage() {
             </Paper>
           )}
 
-          {mappedShibuts.length > 0 && (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>תאריך</TableCell>
-                    <TableCell>עמדה</TableCell>
-                    <TableCell>משמרת</TableCell>
-                    <TableCell>פעולות</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {mappedShibuts.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{format(item.date, "dd/MM/yyyy")}</TableCell>
-                      <TableCell>{item.outpostName}</TableCell>
-                      <TableCell>{item.shiftLabel}</TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} flexWrap="wrap">
-                          <AddToCalendar
-                            mode="single"
-                            shibuts={{
-                              guardName: user?.name,
-                              outpostName: item.outpostName,
-                              start: item.start,
-                              end: item.end,
-                            }}
-                          />
-                          <Button variant="outlined" color="warning" onClick={() => onOpenRequestDialog(item)}>
-                            בקשת אילוץ/החלפה
-                          </Button>
-                        </Stack>
-                      </TableCell>
+          {mappedShibuts.length > 0 &&
+            (isMobile ? (
+              <Stack spacing={1.5}>
+                {mappedShibuts.map((item) => (
+                  <Paper
+                    key={item.id}
+                    elevation={0}
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <Stack spacing={1.25} sx={{ p: 2 }}>
+                      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            תאריך
+                          </Typography>
+                          <Typography fontWeight={700}>{format(item.date, "dd/MM/yyyy")}</Typography>
+                        </Box>
+                        <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: "nowrap" }}>
+                          {item.shiftLabel}
+                        </Typography>
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.outpostName}
+                      </Typography>
+                      <Stack spacing={1}>
+                        <AddToCalendar
+                          mode="single"
+                          shibuts={{
+                            guardName: user?.name,
+                            outpostName: item.outpostName,
+                            start: item.start,
+                            end: item.end,
+                          }}
+                        />
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          color="warning"
+                          onClick={() => onOpenRequestDialog(item)}
+                        >
+                          בקשת אילוץ/החלפה
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            ) : (
+              <TableContainer
+                component={Paper}
+                elevation={0}
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: "10px",
+                  overflow: "hidden",
+                  overflowX: "auto",
+                }}
+              >
+                <Table size="small" sx={{ minWidth: 720, tableLayout: "fixed" }}>
+                  <TableHead>
+                    <TableRow
+                      sx={{
+                        "& th": {
+                          fontWeight: 700,
+                          fontSize: "0.8rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          color: "text.secondary",
+                          bgcolor: "rgba(0,0,0,0.02)",
+                          borderBottom: "2px solid",
+                          borderColor: "divider",
+                          textAlign: "right",
+                          py: 1.5,
+                        },
+                      }}
+                    >
+                      <TableCell sx={{ width: "12%" }}>תאריך</TableCell>
+                      <TableCell sx={{ width: "22%" }}>עמדה</TableCell>
+                      <TableCell sx={{ width: "14%" }}>משמרת</TableCell>
+                      <TableCell sx={{ width: "52%", textAlign: "center !important" }}>פעולות</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+                  </TableHead>
+                  <TableBody>
+                    {mappedShibuts.map((item) => (
+                      <TableRow
+                        key={item.id}
+                        sx={{
+                          "&:hover": { bgcolor: "rgba(75,107,42,0.03)" },
+                          "&:last-child td": { borderBottom: 0 },
+                        }}
+                      >
+                        <TableCell sx={{ whiteSpace: "nowrap", py: 1.25 }}>
+                          {format(item.date, "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            py: 1.25,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                          title={item.outpostName}
+                        >
+                          {item.outpostName}
+                        </TableCell>
+                        <TableCell sx={{ whiteSpace: "nowrap", py: 1.25 }}>{item.shiftLabel}</TableCell>
+                        <TableCell align="center" sx={{ py: 1.25 }}>
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            justifyContent="center"
+                            alignItems="center"
+                            flexWrap="nowrap"
+                          >
+                            <AddToCalendar
+                              compact
+                              mode="single"
+                              shibuts={{
+                                guardName: user?.name,
+                                outpostName: item.outpostName,
+                                start: item.start,
+                                end: item.end,
+                              }}
+                            />
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="warning"
+                              onClick={() => onOpenRequestDialog(item)}
+                              sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
+                            >
+                              בקשת אילוץ/החלפה
+                            </Button>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ))}
         </Stack>
       )}
 

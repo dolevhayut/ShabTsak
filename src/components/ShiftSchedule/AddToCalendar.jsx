@@ -17,7 +17,14 @@ const buildEventLink = (event) => {
   return `https://www.google.com/calendar/event?action=TEMPLATE&text=משמרת+לחייל+${guardName}&dates=${startTime}/${endTime}&details=חייל:+${guardName}%0Aעמדה:+${outpostName}%0Aאימייל:+${guardMail}%0Aטלפון:+${guardPhone}&add=${guardMail}`;
 };
 
-const AddToCalendar = ({ shibuts = {}, guards = [], outposts = [], mode = "single", events = [] }) => {
+const AddToCalendar = ({
+  shibuts = {},
+  guards = [],
+  outposts = [],
+  mode = "single",
+  events = [],
+  compact = false,
+}) => {
   const resolveSingleEvent = () => {
     if (!shibuts || Object.keys(shibuts).length === 0) {
       return null;
@@ -66,10 +73,12 @@ const AddToCalendar = ({ shibuts = {}, guards = [], outposts = [], mode = "singl
 
   return (
     <Button
-      fullWidth
+      fullWidth={!compact}
+      size={compact ? "small" : "medium"}
       variant="outlined"
       onClick={addToGoogleCalendar}
-      startIcon={<CalendarMonthIcon />}
+      startIcon={<CalendarMonthIcon fontSize={compact ? "small" : "medium"} />}
+      sx={compact ? { flexShrink: 0, whiteSpace: "nowrap" } : undefined}
     >
       הוספה ליומן
     </Button>
