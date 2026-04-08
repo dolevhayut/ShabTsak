@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import { toast } from "./notificationService";
+import { getCredentials } from "./authCredentials";
 
 /**
  * אנליטיקס ברמת חיילים ועמדות
@@ -9,32 +10,31 @@ import { toast } from "./notificationService";
  */
 export async function getAnalyticsData(campId, fromDate, toDate) {
   try {
+    const creds = getCredentials();
     const fromTs = fromDate.getTime();
     const toTs = toDate.getTime();
 
     // שיבוצים בטווח
-    const { data: shibutsim, error: sErr } = await supabase
-      .from("shibuts")
-      .select("guardId, outpostId")
-      .eq("campId", campId)
-      .gte("theDate", fromTs)
-      .lte("theDate", toTs);
+    const { data: shibutsim, error: sErr } = await supabase.rpc("rpc_get_shibuts_by_camp", {
+      ...creds,
+      p_camp_id: campId,
+      p_start_ts: fromTs,
+      p_end_ts: toTs,
+    });
     if (sErr) throw sErr;
 
     // שומרים
-    const { data: guards, error: gErr } = await supabase
-      .from("guards")
-      .select("id, name, color")
-      .eq("campId", campId)
-      .order("id");
+    const { data: guards, error: gErr } = await supabase.rpc("rpc_get_guards_by_camp", {
+      ...creds,
+      p_camp_id: campId,
+    });
     if (gErr) throw gErr;
 
     // עמדות
-    const { data: outposts, error: oErr } = await supabase
-      .from("outposts")
-      .select("id, name")
-      .eq("campId", campId)
-      .order("id");
+    const { data: outposts, error: oErr } = await supabase.rpc("rpc_get_outposts_by_camp", {
+      ...creds,
+      p_camp_id: campId,
+    });
     if (oErr) throw oErr;
 
     const guardMap  = Object.fromEntries(guards.map((g) => [g.id, g]));
