@@ -1,7 +1,7 @@
 import { toast } from "@/services/notificationService";
 import { supabase } from "./supabaseClient";
-import { getTimeStr } from "../utils/dateUtils";
 import { getCredentials } from "./authCredentials";
+import { format } from "date-fns";
 
 export async function createOrUpdateShibuts(bodyFormData) {
     try {
@@ -16,6 +16,8 @@ export async function createOrUpdateShibuts(bodyFormData) {
                 p_outpost_id: bodyFormData.outpostId,
                 p_camp_id: bodyFormData.campId,
                 p_the_date: bodyFormData.theDate,
+                p_start_minute: bodyFormData.startMinute ?? null,
+                p_end_minute: bodyFormData.endMinute ?? null,
             });
             if (error) throw error;
         } else {
@@ -26,12 +28,17 @@ export async function createOrUpdateShibuts(bodyFormData) {
                 p_outpost_id: bodyFormData.outpostId,
                 p_camp_id: bodyFormData.campId,
                 p_the_date: bodyFormData.theDate,
+                p_start_minute: bodyFormData.startMinute ?? null,
+                p_end_minute: bodyFormData.endMinute ?? null,
             });
             if (error) throw error;
         }
 
         toast.success(
-            `שיבוץ של ${bodyFormData.guardName} בעמדה ${bodyFormData.outpostName} בשעות ${getTimeStr(bodyFormData.start.getHours())} - ${getTimeStr(bodyFormData.end.getHours())} נשמר בהצלחה`
+            `שיבוץ של ${bodyFormData.guardName} בעמדה ${bodyFormData.outpostName} בשעות ${format(
+                bodyFormData.start,
+                "HH:mm"
+            )} - ${format(bodyFormData.end, "HH:mm")} נשמר בהצלחה`
         );
     } catch (err) {
         console.error(err);
@@ -198,6 +205,8 @@ export async function updateShibutsGuard(shibutsId, newGuardId) {
             p_outpost_id: existing.outpostId,
             p_camp_id: existing.campId,
             p_the_date: existing.theDate,
+            p_start_minute: existing.startMinute ?? null,
+            p_end_minute: existing.endMinute ?? null,
         });
         if (error) throw error;
         toast.success("השיבוץ הועבר לשומר אחר");

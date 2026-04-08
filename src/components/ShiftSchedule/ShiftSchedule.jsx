@@ -80,6 +80,32 @@ function useLoading() {
   return [isLoading, withLoading];
 }
 
+const MINUTES_IN_DAY = 24 * 60;
+const DURATION_STEP_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 4, 6, 8];
+
+function toMinuteOfDay(date) {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function buildDatesFromOffsets(baseDate, startMinute, endMinute) {
+  const dayStart = new Date(baseDate);
+  dayStart.setHours(0, 0, 0, 0);
+  const start = new Date(dayStart.getTime() + startMinute * 60 * 1000);
+  const end = new Date(dayStart.getTime() + endMinute * 60 * 1000);
+  return { start, end };
+}
+
+function computeMinuteOffsets(startDate, endDate) {
+  const startMinute = toMinuteOfDay(startDate);
+  const dayStart = new Date(startDate);
+  dayStart.setHours(0, 0, 0, 0);
+  let endMinute = Math.round((endDate.getTime() - dayStart.getTime()) / (60 * 1000));
+  while (endMinute <= startMinute) {
+    endMinute += MINUTES_IN_DAY;
+  }
+  return { startMinute, endMinute };
+}
+
 function ShiftSchedule() {
   const { user } = useAuthContext();
   const isCommander = useIsCommander();
@@ -99,6 +125,7 @@ function ShiftSchedule() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedOutpostIds, setSelectedOutpostIds] = useState(null);
   const [currentView, setCurrentView] = useState("day");
+  const [durationAdjustHours, setDurationAdjustHours] = useState(0.5);
 
   // ── אירועים / דיווחים ─────────────────────────────────────────────────────
   const [events, setEvents] = useState([]);
@@ -214,10 +241,18 @@ function ShiftSchedule() {
         const { id, ...copiedShibuts } = s;
         const shift = shifts?.find((sh) => sh.id == s.shiftId);
         const guard = guards?.find((g) => g.value == s.guardId);
-        const start = getDateAndTime(s.theDate, shift?.start);
-        const end = getDateAndTime(s.theDate, shift?.end, true);
-        if (end <= start) {
-          end.setDate(end.getDate() + 1);
+        let start;
+        let end;
+        if (Number.isFinite(s.startMinute) && Number.isFinite(s.endMinute)) {
+          const customRange = buildDatesFromOffsets(new Date(s.theDate), s.startMinute, s.endMinute);
+          start = customRange.start;
+          end = customRange.end;
+        } else {
+          start = getDateAndTime(s.theDate, shift?.start);
+          end = getDateAndTime(s.theDate, shift?.end, true);
+          if (end <= start) {
+            end.setDate(end.getDate() + 1);
+          }
         }
         const updatedShibuts = {
           ...copiedShibuts,
@@ -267,8 +302,8 @@ function ShiftSchedule() {
 
   const checkTimeLimit = useCallback((guard, shibuts) => {
     let hasTimeLimit = false;
-    const shibutsStart = shibuts.start.getHours();
-    const shibutsEnd = shibuts.end.getHours();
+    const shibutsStart = shibuts.start.getHours() + shibuts.start.getMinutes() / 60;
+    const shibutsEnd = shibuts.end.getHours() + shibuts.end.getMinutes() / 60;
     if (guard.timeLimits.length > 0) {
       const limits = guard.timeLimits.filter(
         (t) =>
@@ -411,10 +446,13 @@ function ShiftSchedule() {
       if (event.isPhantom) {
         if (!isCommander) return;
         const outpost = outposts.find((o) => o.id === event.outpostId);
+        const phantomStart = new Date(event.start);
+        const phantomEnd = new Date(event.end);
+        const phantomOffsets = computeMinuteOffsets(phantomStart, phantomEnd);
         setEdit(false);
         setTempShibuts({
-          start: new Date(event.start),
-          end: new Date(event.end),
+          start: phantomStart,
+          end: phantomEnd,
           theDate: event.start.getTime(),
           guardName: "",
           guardId: "",
@@ -424,6 +462,8 @@ function ShiftSchedule() {
           campId,
           color: "#ff0000",
           title: "",
+          startMinute: phantomOffsets.startMinute,
+          endMinute: phantomOffsets.endMinute,
         });
         setDialogDetails({
           shiftName: `${outpost?.name || ""} | ${format(new Date(event.start), "HH:mm")} - ${format(new Date(event.end), "HH:mm")}`,
@@ -447,7 +487,12 @@ function ShiftSchedule() {
         dateText: format(new Date(shibuts.start), "dd/MM/yyyy"),
       });
       setEdit(true);
-      setTempShibuts({ ...shibuts });
+      const existingOffsets = computeMinuteOffsets(new Date(shibuts.start), new Date(shibuts.end));
+      setTempShibuts({
+        ...shibuts,
+        startMinute: Number.isFinite(shibuts.startMinute) ? shibuts.startMinute : existingOffsets.startMinute,
+        endMinute: Number.isFinite(shibuts.endMinute) ? shibuts.endMinute : existingOffsets.endMinute,
+      });
       setPopupOpen(true);
     },
     [outposts, isCommander, campId]
@@ -504,6 +549,7 @@ function ShiftSchedule() {
         if (end <= start) {
           end.setDate(end.getDate() + 1);
         }
+        const slotOffsets = computeMinuteOffsets(start, end);
         const outpost = outposts.find((o) => o.id === resourceId);
         setEdit(false);
         const newShibuts = {
@@ -518,6 +564,8 @@ function ShiftSchedule() {
           campId: campId,
           color: "#ff0000",
           title: "",
+          startMinute: slotOffsets.startMinute,
+          endMinute: slotOffsets.endMinute,
         };
         setDialogDetails({
           shiftName: `${outpost?.name || ""} | ${format(start, "HH:mm")} - ${format(end, "HH:mm")}`,
@@ -561,13 +609,70 @@ function ShiftSchedule() {
       if (end <= start) {
         end.setDate(end.getDate() + 1);
       }
+      const { startMinute, endMinute } = computeMinuteOffsets(start, end);
       setTempShibuts({
         ...tempShibuts,
         start,
         end,
+        startMinute,
+        endMinute,
       });
+      setDialogDetails((prev) => ({
+        ...prev,
+        dateText: format(start, "dd/MM/yyyy"),
+        shiftName: (() => {
+          const outpost = outposts.find((o) => o.id === tempShibuts.outpostId || o.id === tempShibuts.resource);
+          return `${outpost?.name || ""} | ${format(start, "HH:mm")} - ${format(end, "HH:mm")}`;
+        })(),
+      }));
     },
-    [tempShibuts]
+    [tempShibuts, outposts]
+  );
+
+  const adjustShibutsDuration = useCallback(
+    (direction) => {
+      if (!tempShibuts?.start || !tempShibuts?.end) return;
+      const deltaMinutes = Math.round(Number(durationAdjustHours || 0) * 60);
+      if (deltaMinutes <= 0) {
+        toast.error("נא לבחור משך שינוי חוקי");
+        return;
+      }
+
+      const start = new Date(tempShibuts.start);
+      const end = new Date(tempShibuts.end);
+      const nextEnd = new Date(end);
+      if (direction === "shorten") {
+        nextEnd.setMinutes(nextEnd.getMinutes() - deltaMinutes);
+      } else {
+        nextEnd.setMinutes(nextEnd.getMinutes() + deltaMinutes);
+      }
+
+      const nextDurationMinutes = Math.round((nextEnd.getTime() - start.getTime()) / (60 * 1000));
+      if (nextDurationMinutes < 30) {
+        toast.error("אורך משמרת מינימלי הוא 30 דקות");
+        return;
+      }
+      if (nextDurationMinutes > 24 * 60) {
+        toast.error("לא ניתן להאריך מעבר ל-24 שעות");
+        return;
+      }
+
+      const { startMinute, endMinute } = computeMinuteOffsets(start, nextEnd);
+      const updated = {
+        ...tempShibuts,
+        start,
+        end: nextEnd,
+        startMinute,
+        endMinute,
+      };
+      setTempShibuts(updated);
+      const outpost = outposts.find((o) => o.id === updated.outpostId || o.id === updated.resource);
+      setDialogDetails((prev) => ({
+        ...prev,
+        shiftName: `${outpost?.name || ""} | ${format(updated.start, "HH:mm")} - ${format(updated.end, "HH:mm")}`,
+      }));
+    },
+    [tempShibuts, durationAdjustHours, outposts]
   );
 
   const onAutoShibutsClick = useCallback(async () => {
@@ -974,6 +1079,37 @@ function ShiftSchedule() {
                       <Typography variant="body2" color="text.secondary">
                         פעולות נוספות
                       </Typography>
+                      <Stack direction={{ xs: "column", sm: "row" }} gap={1}>
+                        <FormControl size="small" sx={{ minWidth: 150 }}>
+                          <InputLabel id="duration-adjust-label">כמה שעות</InputLabel>
+                          <Select
+                            labelId="duration-adjust-label"
+                            value={durationAdjustHours}
+                            onChange={(e) => setDurationAdjustHours(Number(e.target.value))}
+                            label="כמה שעות"
+                          >
+                            {DURATION_STEP_OPTIONS.map((step) => (
+                              <MenuItem key={step} value={step}>
+                                {step} שעות
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <Button
+                          variant="outlined"
+                          color="warning"
+                          onClick={() => adjustShibutsDuration("shorten")}
+                        >
+                          קצר משמרת
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          onClick={() => adjustShibutsDuration("extend")}
+                        >
+                          הארך משמרת
+                        </Button>
+                      </Stack>
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DatePicker
                           label="הזזה ידנית לתאריך"
