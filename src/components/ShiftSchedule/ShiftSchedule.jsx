@@ -1,8 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { format, parse, startOfWeek, getDay, addDays } from "date-fns";
 import he from "date-fns/locale/he";
 import { getOutpostsAndShiftsForCampId } from "@/services/outpostService.js";
@@ -41,6 +39,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
 import SettingsIcon from "@mui/icons-material/Settings";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import CampSettingsDialog from "@/components/CampSettingsDialog/CampSettingsDialog";
 import { getShibutsEvents, addShibutsEvent, deleteShibutsEvent } from "@/services/shibutsEventService";
 import { getGuardLinkByUserId } from "@/services/userGuardLinkService";
@@ -70,7 +69,6 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
-const DnDCalendar = withDragAndDrop(Calendar);
 const lrm = "\u200E";
 const rtlFormats = {
   eventTimeRangeFormat: ({ start, end }, culture, currentLocalizer) => {
@@ -144,6 +142,7 @@ function ShiftSchedule() {
   const [currentView, setCurrentView] = useState("day");
   const [durationAdjustHours, setDurationAdjustHours] = useState(0.5);
   const [extraDays, setExtraDays] = useState(0);
+  const [swapSource, setSwapSource] = useState(null);
   const sentinelRef = useRef(null);
 
   // ── אירועים / דיווחים ─────────────────────────────────────────────────────
@@ -485,10 +484,58 @@ function ShiftSchedule() {
     setPopupOpen(false);
   }, []);
 
+  // ── Swap guards (click-based) ──────────────────────────────────────────────
+  const executeSwap = useCallback(
+    async (sourceEvent, targetEvent) => {
+      const aGuard = { guardId: sourceEvent.guardId, guardName: sourceEvent.guardName, color: sourceEvent.color, title: sourceEvent.guardName };
+      const bGuard = { guardId: targetEvent.guardId, guardName: targetEvent.guardName, color: targetEvent.color, title: targetEvent.guardName };
+
+      const updatedA = {
+        ...sourceEvent,
+        ...bGuard,
+        outpostId: sourceEvent.outpostId ?? sourceEvent.resource,
+        campId,
+        id: sourceEvent.shibutsId,
+        theDate: (sourceEvent.originalStart || sourceEvent.start).getTime(),
+        start: sourceEvent.originalStart || sourceEvent.start,
+        end: sourceEvent.originalEnd || sourceEvent.end,
+      };
+      const updatedB = {
+        ...targetEvent,
+        ...aGuard,
+        outpostId: targetEvent.outpostId ?? targetEvent.resource,
+        campId,
+        id: targetEvent.shibutsId,
+        theDate: targetEvent.start.getTime(),
+      };
+
+      const outpostA = outposts.find((o) => o.id == updatedA.outpostId);
+      const outpostB = outposts.find((o) => o.id == updatedB.outpostId);
+      updatedA.outpostName = outpostA?.name || "";
+      updatedB.outpostName = outpostB?.name || "";
+
+      try {
+        await withLoading(async () => {
+          await createOrUpdateShibuts(updatedA);
+          await createOrUpdateShibuts(updatedB);
+        });
+        const next = shibutsim.map((s) => {
+          if (s.shibutsId === sourceEvent.shibutsId) return updatedA;
+          if (s.shibutsId === targetEvent.shibutsId) return updatedB;
+          return s;
+        });
+        setShibutsim(next);
+        toast.success(`הוחלף: ${aGuard.guardName} ↔ ${bGuard.guardName}`);
+      } catch { /* toasted inside service */ }
+    },
+    [outposts, shibutsim, campId]
+  );
+
   const onShibutsClick = useCallback(
     (event) => {
       // אירוע פנטום – פתיחת דיאלוג שיבוץ חדש
       if (event.isPhantom) {
+        setSwapSource(null);
         if (!isCommander) return;
         const outpost = outposts.find((o) => o.id === event.outpostId);
         const phantomStart = new Date(event.start);
@@ -755,83 +802,6 @@ function ShiftSchedule() {
     }
   }, [autoShibutsStartDate, autoShibutsEndDate, campId, mapShibutsim]);
 
-  // ── DnD accessors & handlers ──────────────────────────────────────────────
-  const draggableAccessor = useCallback(
-    (event) => {
-      if (!isCommander) return false;
-      if (event.isPhantom) return false;
-      if (event.isFromPreviousDay) return false;
-      return true;
-    },
-    [isCommander]
-  );
-
-  const resizableAccessor = useCallback(() => false, []);
-
-  const handleEventDrop = useCallback(
-    async ({ event, start: newStart, resourceId: newResourceId }) => {
-      if (event.isPhantom || event.isFromPreviousDay) return;
-
-      const dropTime = new Date(newStart).getTime();
-      const dropResource = newResourceId ?? event.outpostId ?? event.resource;
-
-      const target = shibutsim.find((s) => {
-        if (s.shibutsId === event.shibutsId) return false;
-        if (s.resource !== dropResource && s.outpostId !== dropResource) return false;
-        return dropTime >= s.start.getTime() && dropTime < s.end.getTime();
-      });
-
-      if (!target) {
-        toast.info("גרור קוביה על קוביה אחרת כדי להחליף שומרים");
-        return;
-      }
-
-      const aGuard = { guardId: event.guardId, guardName: event.guardName, color: event.color, title: event.guardName };
-      const bGuard = { guardId: target.guardId, guardName: target.guardName, color: target.color, title: target.guardName };
-
-      const updatedA = {
-        ...event,
-        ...bGuard,
-        outpostId: event.outpostId ?? event.resource,
-        campId,
-        id: event.shibutsId,
-        theDate: (event.originalStart || event.start).getTime(),
-        start: event.originalStart || event.start,
-        end: event.originalEnd || event.end,
-      };
-      const updatedB = {
-        ...target,
-        ...aGuard,
-        outpostId: target.outpostId ?? target.resource,
-        campId,
-        id: target.shibutsId,
-        theDate: target.start.getTime(),
-      };
-
-      const outpostA = outposts.find((o) => o.id == updatedA.outpostId);
-      const outpostB = outposts.find((o) => o.id == updatedB.outpostId);
-      updatedA.outpostName = outpostA?.name || "";
-      updatedB.outpostName = outpostB?.name || "";
-
-      try {
-        await withLoading(async () => {
-          await createOrUpdateShibuts(updatedA);
-          await createOrUpdateShibuts(updatedB);
-        });
-        const next = shibutsim.map((s) => {
-          if (s.shibutsId === event.shibutsId) return updatedA;
-          if (s.shibutsId === target.shibutsId) return updatedB;
-          return s;
-        });
-        setShibutsim(next);
-        toast.success(`הוחלף: ${aGuard.guardName} ↔ ${bGuard.guardName}`);
-      } catch { /* toasted inside service */ }
-    },
-    [outposts, shibutsim, campId]
-  );
-
-  const handleEventResize = useCallback(() => {}, []);
-
   const visibleOutpostIds = useMemo(() => {
     if (!Array.isArray(selectedOutpostIds)) return outposts.map((o) => o.id);
     return selectedOutpostIds;
@@ -995,13 +965,19 @@ function ShiftSchedule() {
       };
     }
     const baseColor = event.color || "#3174ad";
+    const isSwapSelected = swapSource && event.shibutsId === swapSource.shibutsId;
     const style = {
       backgroundColor: baseColor,
       borderRadius: "4px",
       opacity: 0.9,
       color: getContrastTextColor(baseColor),
-      border: "0px",
+      border: isSwapSelected ? "3px solid #fff" : "0px",
+      boxShadow: isSwapSelected ? "0 0 12px 3px rgba(255,255,255,0.7), 0 0 4px 1px rgba(0,0,0,0.4)" : undefined,
       display: "block",
+      cursor: swapSource ? "pointer" : undefined,
+      transform: isSwapSelected ? "scale(1.04)" : undefined,
+      zIndex: isSwapSelected ? 10 : undefined,
+      transition: "transform 0.15s, box-shadow 0.15s, border 0.15s",
     };
     if (event.isFromPreviousDay) {
       style.opacity = 0.45;
@@ -1014,7 +990,58 @@ function ShiftSchedule() {
       )`;
     }
     return { style };
-  }, [isCommander]);
+  }, [isCommander, swapSource]);
+
+  const onSwapIconClick = useCallback(
+    (e, event) => {
+      e.stopPropagation();
+      if (event.isFromPreviousDay) return;
+
+      if (swapSource && swapSource.shibutsId === event.shibutsId) {
+        setSwapSource(null);
+        toast.info("החלפה בוטלה");
+        return;
+      }
+
+      if (swapSource) {
+        const src = shibutsim.find((s) => s.shibutsId === swapSource.shibutsId);
+        if (src) {
+          executeSwap(src, {
+            ...event,
+            start: event.originalStart || event.start,
+            end: event.originalEnd || event.end,
+            outpostId: event.resource,
+          });
+        }
+        setSwapSource(null);
+        return;
+      }
+
+      setSwapSource({
+        shibutsId: event.shibutsId,
+        guardId: event.guardId,
+        guardName: event.guardName || event.title,
+        color: event.color,
+      });
+      toast.info(`לחץ על אייקון ↔ בקוביה אחרת כדי להחליף עם ${event.guardName || event.title}`);
+    },
+    [swapSource, shibutsim, executeSwap]
+  );
+
+  const onDeleteIconClick = useCallback(
+    async (e, event) => {
+      e.stopPropagation();
+      if (!event.shibutsId || event.isFromPreviousDay) return;
+      const guardName = event.guardName || event.title || "";
+      if (!window.confirm(`למחוק את השיבוץ של ${guardName}?`)) return;
+      try {
+        await withLoading(() => deleteShibuts(event.shibutsId));
+        setShibutsim((prev) => prev.filter((s) => s.shibutsId !== event.shibutsId));
+        toast.success(`שיבוץ של ${guardName} נמחק`);
+      } catch { /* toasted inside service */ }
+    },
+    []
+  );
 
   const EventComponent = useCallback(
     ({ event }) => {
@@ -1041,22 +1068,101 @@ function ShiftSchedule() {
           </Tooltip>
         );
       }
+
+      const isSwapSelected = swapSource && event.shibutsId === swapSource.shibutsId;
+      const showActions = isCommander && !event.isFromPreviousDay;
+
       return (
         <Box
           sx={{
-            px: 0.5,
-            overflow: "hidden",
-            whiteSpace: "nowrap",
-            textOverflow: "ellipsis",
-            fontSize: "inherit",
-            lineHeight: "inherit",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            height: "100%",
+            px: 0.75,
+            py: 0.25,
+            gap: 0.25,
           }}
         >
-          {event.title}
+          <Box
+            component="span"
+            sx={{
+              fontWeight: 700,
+              fontSize: "0.95rem",
+              lineHeight: 1.2,
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {event.title}
+          </Box>
+
+          {showActions && (
+            <Box sx={{ display: "flex", gap: 0.75, mt: 0.25 }}>
+              <Tooltip title="החלף שומר" placement="top">
+                <Box
+                  component="span"
+                  onClick={(e) => onSwapIconClick(e, event)}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    backgroundColor: isSwapSelected
+                      ? "rgba(255,255,255,0.95)"
+                      : swapSource
+                        ? "rgba(255,255,255,0.85)"
+                        : "rgba(255,255,255,0.3)",
+                    cursor: "pointer",
+                    transition: "background-color 0.15s, transform 0.15s",
+                    "&:hover": {
+                      backgroundColor: "rgba(255,255,255,0.9)",
+                      transform: "scale(1.15)",
+                    },
+                  }}
+                >
+                  <SwapHorizIcon
+                    sx={{
+                      fontSize: 20,
+                      color: isSwapSelected ? "#1976d2" : swapSource ? "#1976d2" : "rgba(0,0,0,0.6)",
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+              <Tooltip title="מחק שיבוץ" placement="top">
+                <Box
+                  component="span"
+                  onClick={(e) => onDeleteIconClick(e, event)}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(255,255,255,0.3)",
+                    cursor: "pointer",
+                    transition: "background-color 0.15s, transform 0.15s",
+                    "&:hover": {
+                      backgroundColor: "rgba(255,80,80,0.85)",
+                      transform: "scale(1.15)",
+                    },
+                  }}
+                >
+                  <DeleteOutlineIcon
+                    sx={{ fontSize: 20, color: "rgba(0,0,0,0.6)" }}
+                  />
+                </Box>
+              </Tooltip>
+            </Box>
+          )}
         </Box>
       );
     },
-    [isCommander]
+    [isCommander, swapSource, onSwapIconClick, onDeleteIconClick]
   );
 
   const messages = {
@@ -1142,6 +1248,34 @@ function ShiftSchedule() {
         <LoadingComp />
       ) : (
         <>
+          {swapSource && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 2,
+                py: 1.5,
+                px: 2,
+                mb: 1,
+                borderRadius: 2,
+                backgroundColor: "info.main",
+                color: "info.contrastText",
+                fontWeight: 700,
+                fontSize: "0.95rem",
+              }}
+            >
+              <span>מצב החלפה: לחץ על קוביה אחרת כדי להחליף עם {swapSource.guardName}</span>
+              <Button
+                size="small"
+                variant="contained"
+                color="warning"
+                onClick={() => { setSwapSource(null); toast.info("החלפה בוטלה"); }}
+              >
+                ביטול
+              </Button>
+            </Box>
+          )}
           {currentView === "day" ? (
             <div className="infinite-day-scroll">
               {renderedDays.map((day, dayIdx) => {
@@ -1164,7 +1298,7 @@ function ShiftSchedule() {
                         {format(day, "EEEE dd/MM", { locale: he })}
                       </div>
                     )}
-                    <DnDCalendar
+                    <Calendar
                       localizer={localizer}
                       culture="he"
                       events={dayEvents}
@@ -1186,10 +1320,6 @@ function ShiftSchedule() {
                       selectable={isCommander}
                       onSelectSlot={isCommander ? handleSelectSlot : undefined}
                       onSelectEvent={onShibutsClick}
-                      onEventDrop={isCommander ? handleEventDrop : undefined}
-                      onEventResize={isCommander ? handleEventResize : undefined}
-                      draggableAccessor={draggableAccessor}
-                      resizableAccessor={resizableAccessor}
                       eventPropGetter={eventPropGetter}
                       components={{ event: EventComponent }}
                       messages={messages}
@@ -1204,7 +1334,7 @@ function ShiftSchedule() {
             </div>
           ) : (
             <div style={{ height: "70vh" }}>
-              <DnDCalendar
+              <Calendar
                 localizer={localizer}
                 culture="he"
                 events={calendarEvents}
@@ -1225,10 +1355,6 @@ function ShiftSchedule() {
                 selectable={isCommander}
                 onSelectSlot={isCommander ? handleSelectSlot : undefined}
                 onSelectEvent={onShibutsClick}
-                onEventDrop={isCommander ? handleEventDrop : undefined}
-                onEventResize={isCommander ? handleEventResize : undefined}
-                draggableAccessor={draggableAccessor}
-                resizableAccessor={resizableAccessor}
                 eventPropGetter={eventPropGetter}
                 components={{ event: EventComponent }}
                 messages={messages}

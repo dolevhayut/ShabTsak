@@ -101,6 +101,24 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
 .rbc-time-view { overflow: visible; }
 .rbc-time-content { overflow: visible !important; max-height: none !important; }
 
+/* ── Calendar font sizes (accessibility) ── */
+.rbc-time-gutter .rbc-label {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.rbc-event {
+  font-size: 0.95rem !important;
+}
+.rbc-event-label {
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+}
+.rbc-header {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  padding: 6px 4px !important;
+}
+
 /* ── Infinite-day seamless scroll ── */
 .rbc-day-continuation .rbc-time-header { display: none; }
 .rbc-day-continuation .rbc-time-view { border-top: none; }
@@ -113,8 +131,8 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
   color: #fff;
   text-align: center;
   font-weight: 700;
-  font-size: 0.85rem;
-  padding: 4px 0;
+  font-size: 1.05rem;
+  padding: 6px 0;
   letter-spacing: 0.02em;
 }
 
@@ -131,19 +149,6 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
 .MuiTypography-root {
   overflow-wrap: break-word;
   word-break: break-word;
-}
-
-/* ── DnD cursor styles ── */
-.rbc-addons-dnd .rbc-event {
-  cursor: grab;
-}
-.rbc-addons-dnd .rbc-event:active,
-.rbc-addons-dnd .rbc-addons-dnd-dragging .rbc-event {
-  cursor: grabbing;
-}
-.rbc-addons-dnd .rbc-event.rbc-addons-dnd-drag-preview {
-  opacity: 0.65;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* ── Reduced motion ── */

@@ -132,7 +132,14 @@ const Header = () => {
           zIndex: 1100,
         }}
       >
-        <Container maxWidth="lg">
+        <Container
+          maxWidth={false}
+          sx={{
+            px: { xs: 2, sm: 2.5, md: 3, lg: 4 },
+            maxWidth: { md: "min(100%, 1600px)" },
+            mx: "auto",
+          }}
+        >
           {/* Mobile header: profile left, logo center, hamburger right */}
           <Box
             sx={{
@@ -197,47 +204,76 @@ const Header = () => {
               display: { xs: "none", md: "flex" },
               alignItems: "center",
               justifyContent: "space-between",
-              height: "60px",
+              gap: 1.5,
+              height: "56px",
+              minHeight: "56px",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
               <Logo darkMode={darkMode} />
             </Box>
 
             <Box
               sx={{
+                flex: 1,
+                minWidth: 0,
                 display: "flex",
                 alignItems: "center",
-                gap: 0.5,
+                justifyContent: "center",
                 visibility: user ? "visible" : "hidden",
+                overflowX: "auto",
+                overflowY: "hidden",
+                mx: -0.5,
+                px: 0.5,
+                scrollbarWidth: "thin",
+                "&::-webkit-scrollbar": { height: 4 },
+                "&::-webkit-scrollbar-thumb": {
+                  borderRadius: 4,
+                  backgroundColor: darkMode ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
+                },
               }}
             >
-              {navLinks.map((link) => (
-                <Button
-                  key={link.to}
-                  component={RouterLink}
-                  to={link.to}
-                  sx={{
-                    color: textColor,
-                    fontWeight: 500,
-                    fontSize: "0.9375rem",
-                    px: 2,
-                    py: 1,
-                    borderRadius: "8px",
-                    "&:hover": {
-                      color: accentColor,
-                      background: darkMode
-                        ? "rgba(107,143,75,0.08)"
-                        : "rgba(75,107,42,0.06)",
-                    },
-                  }}
-                >
-                  {link.label}
-                </Button>
-              ))}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "nowrap",
+                  gap: 0.25,
+                  width: "max-content",
+                  maxWidth: "100%",
+                }}
+              >
+                {navLinks.map((link) => (
+                  <Button
+                    key={link.to}
+                    component={RouterLink}
+                    to={link.to}
+                    sx={{
+                      color: textColor,
+                      fontWeight: 500,
+                      fontSize: "0.8125rem",
+                      lineHeight: 1.2,
+                      px: 1.25,
+                      py: 0.75,
+                      minWidth: "auto",
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
+                      borderRadius: "8px",
+                      "&:hover": {
+                        color: accentColor,
+                        background: darkMode
+                          ? "rgba(107,143,75,0.08)"
+                          : "rgba(75,107,42,0.06)",
+                      },
+                    }}
+                  >
+                    {link.label}
+                  </Button>
+                ))}
+              </Box>
             </Box>
 
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
               <ThemeToggle darkMode={darkMode} onToggle={toggleDarkMode} borderColor={borderColor} />
 
               <Tooltip title={user?.name ? `שלום ${user.name}` : "שלום, אנא התחבר"}>
