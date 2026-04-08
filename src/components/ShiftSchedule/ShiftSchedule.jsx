@@ -1236,41 +1236,52 @@ function ShiftSchedule() {
           </Box>
         </LocalizationProvider>
       )}
-      <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 2, flexWrap: "wrap" }}>
-        <FormControl size="small" sx={{ minWidth: 260 }}>
-          <InputLabel id="outpost-filter-label">עמדות להצגה ביומן</InputLabel>
-          <Select
-            labelId="outpost-filter-label"
-            multiple
-            value={visibleOutpostIds}
-            onChange={handleOutpostFilterChange}
-            label="עמדות להצגה ביומן"
-            renderValue={(selected) => {
-              if (!selected.length) return "לא נבחרו עמדות";
-              if (selected.length === outposts.length) return "כל העמדות";
-              return `${selected.length} עמדות נבחרו`;
-            }}
-          >
-            {outposts.map((outpost) => (
-              <MenuItem key={outpost.id} value={outpost.id}>
-                <Checkbox checked={visibleOutpostIds.includes(outpost.id)} />
-                <ListItemText primary={outpost.name} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <Button variant="outlined" onClick={() => setSelectedOutpostIds(outposts.map((o) => o.id))}>
-          הצג הכל
-        </Button>
-        <Button variant="text" color="inherit" onClick={() => setSelectedOutpostIds([])}>
-          נקה הכל
-        </Button>
-      </Box>
+      <Box
+        sx={{
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 2,
+          px: { xs: 1, sm: 1.5 },
+          py: { xs: 1, sm: 1.5 },
+          mb: 1,
+          backgroundColor: "background.paper",
+        }}
+      >
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 2, flexWrap: "wrap" }}>
+          <FormControl size="small" sx={{ minWidth: 260 }}>
+            <InputLabel id="outpost-filter-label">עמדות להצגה ביומן</InputLabel>
+            <Select
+              labelId="outpost-filter-label"
+              multiple
+              value={visibleOutpostIds}
+              onChange={handleOutpostFilterChange}
+              label="עמדות להצגה ביומן"
+              renderValue={(selected) => {
+                if (!selected.length) return "לא נבחרו עמדות";
+                if (selected.length === outposts.length) return "כל העמדות";
+                return `${selected.length} עמדות נבחרו`;
+              }}
+            >
+              {outposts.map((outpost) => (
+                <MenuItem key={outpost.id} value={outpost.id}>
+                  <Checkbox checked={visibleOutpostIds.includes(outpost.id)} />
+                  <ListItemText primary={outpost.name} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button variant="outlined" onClick={() => setSelectedOutpostIds(outposts.map((o) => o.id))}>
+            הצג הכל
+          </Button>
+          <Button variant="text" color="inherit" onClick={() => setSelectedOutpostIds([])}>
+            נקה הכל
+          </Button>
+        </Box>
 
-      {isLoading || guardsLoading || outpostsLoading || shiftsLoading ? (
-        <LoadingComp />
-      ) : (
-        <>
+        {isLoading || guardsLoading || outpostsLoading || shiftsLoading ? (
+          <LoadingComp />
+        ) : (
+          <>
           {swapSource && (
             <Box
               sx={{
@@ -1621,13 +1632,14 @@ function ShiftSchedule() {
               )}
             </DialogActions>
           </Dialog>
-          <CampSettingsDialog
-            open={settingsOpen}
-            onClose={() => setSettingsOpen(false)}
-            campId={campId}
-          />
-        </>
-      )}
+            <CampSettingsDialog
+              open={settingsOpen}
+              onClose={() => setSettingsOpen(false)}
+              campId={campId}
+            />
+          </>
+        )}
+      </Box>
     </div>
   );
 }
