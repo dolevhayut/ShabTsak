@@ -5,6 +5,7 @@ import { toast } from "@/services/notificationService";
 import { Dialog, DialogTitle, DialogActions, Button } from "@mui/material";
 import { supabase } from "@/services/supabaseClient";
 import { getDayOfWeekHebrew } from "@/utils/dateUtils"
+import { deleteShift } from "@/services/shiftService";
 
 DialogDelete.propTypes = {
     openDialog: PropTypes.bool.isRequired,
@@ -34,14 +35,26 @@ function DialogDelete({ openDialog, setOpenDialog, subject, item }) {
 
     const doApiDelete = async () => {
         try {
-            const { error } = await supabase
-                .from(tableMap[subject])
-                .delete()
-                .eq("id", item.id);
-            if (error) throw error;
+            if (subject === "shift") {
+                await deleteShift(item.id);
+            } else {
+                const { error } = await supabase
+                    .from(tableMap[subject])
+                    .delete()
+                    .eq("id", item.id);
+                if (error) throw error;
+            }
             toast.success(`${subjectHebrew}  ${subject === 'shift' ? `יום ${getDayOfWeekHebrew(item.dayId)}` : item.name} נמחקה בהצלחה`);
             setOpenDialog(false);
-            queryClient.invalidateQueries(`${subject}s`)
+            if (subject === "shift") {
+                queryClient.invalidateQueries(["shifts"]);
+                if (item?.outpostId != null) {
+                    queryClient.invalidateQueries(["shifts", String(item.outpostId)]);
+                    queryClient.invalidateQueries(["shifts", Number(item.outpostId)]);
+                }
+            } else {
+                queryClient.invalidateQueries(`${subject}s`);
+            }
         }
         catch (err) {
             console.log(err);

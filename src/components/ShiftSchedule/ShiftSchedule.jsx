@@ -793,12 +793,13 @@ function ShiftSchedule() {
     if (autoShibutsStartDate && autoShibutsEndDate) {
       const dates = [autoShibutsStartDate.toDate(), autoShibutsEndDate.toDate()];
       const outpostIds = Array.isArray(selectedOutpostIds) ? selectedOutpostIds : null;
-      let newShibutsim = await withLoading(() => getAutoShibutsimByCampIdAndDates(campId, dates, outpostIds));
-      setShibutsim(shibutsim?.concat(mapShibutsim(newShibutsim)));
+      await withLoading(() => getAutoShibutsimByCampIdAndDates(campId, dates, outpostIds));
+      const updated = await getShibutsimOfCurrentMonthByCampId(campId);
+      setShibutsim(mapShibutsim(updated || []));
     } else {
       toast.error("נא לבחור תאריכים לשיבוץ אוטומטי");
     }
-  }, [autoShibutsStartDate, autoShibutsEndDate, campId, shibutsim, mapShibutsim, selectedOutpostIds]);
+  }, [autoShibutsStartDate, autoShibutsEndDate, campId, mapShibutsim, selectedOutpostIds]);
 
   const onDeleteAutoShibutsClick = useCallback(async () => {
     if (autoShibutsStartDate && autoShibutsEndDate) {

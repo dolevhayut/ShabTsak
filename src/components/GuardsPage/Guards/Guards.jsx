@@ -77,10 +77,12 @@ const Guards = ({ campId, handleEdit, handleDelete }) => {
           overflow: "hidden",
         }}
       >
-        <TableContainer>
+        <TableContainer sx={{ overflowX: "auto" }}>
           <Table
+            size="small"
             sx={{
               width: "100%",
+              minWidth: 900,
               tableLayout: "fixed",
               "& th": {
                 fontWeight: 700,
@@ -114,17 +116,23 @@ const Guards = ({ campId, handleEdit, handleDelete }) => {
             }}
           >
             <colgroup>
+              <col style={{ width: "4%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "14%" }} />
               <col style={{ width: "6%" }} />
-              <col style={{ width: "11%" }} />
-              <col style={{ width: "41%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "26%" }} />
+              <col style={{ width: "22%" }} />
+              <col style={{ width: "14%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "22%" }} />
             </colgroup>
             <TableHead>
               <TableRow>
                 <TableCell>#</TableCell>
                 <TableCell>פרופיל</TableCell>
-                <TableCell>פרטים</TableCell>
+                <TableCell>שם</TableCell>
+                <TableCell sx={{ textAlign: "center !important" }}>צבע</TableCell>
+                <TableCell>אימייל</TableCell>
+                <TableCell>טלפון</TableCell>
                 <TableCell sx={{ textAlign: "center !important" }}>שיבוץ אוטומטי</TableCell>
                 <TableCell sx={{ textAlign: "center !important" }}>פעולות</TableCell>
               </TableRow>

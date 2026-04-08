@@ -19,16 +19,12 @@ export async function getShiftsByOutpostId(outpostId) {
 }
 
 export async function deleteShift(shiftId) {
-    try {
-        const creds = getCredentials();
-        const { error } = await supabase.rpc("rpc_delete_shift", {
-            ...creds,
-            p_shift_id: shiftId,
-        });
-        if (error) throw error;
-    } catch (err) {
-        console.log(err);
-    }
+    const creds = getCredentials();
+    const { error } = await supabase.rpc("rpc_delete_shift", {
+        ...creds,
+        p_shift_id: shiftId,
+    });
+    if (error) throw error;
 }
 
 /**
