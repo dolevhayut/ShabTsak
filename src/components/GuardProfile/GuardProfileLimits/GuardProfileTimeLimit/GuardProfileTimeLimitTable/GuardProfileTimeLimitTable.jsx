@@ -1,5 +1,5 @@
 import { getDayName } from "../../utils.js";
-import { Table, TableBody, TableHead, TableRow, TableCell, IconButton } from "@mui/material";
+import { Table, TableBody, TableHead, TableRow, TableCell, IconButton, TableContainer } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 const formatDecimalHour = (hourValue) => {
@@ -11,30 +11,32 @@ const formatDecimalHour = (hourValue) => {
 
 const GuardProfileTimeLimitTable = ({ timeLimits, handleDelete }) => {
   return (
-    <Table size="small">
-      <TableHead>
-        <TableRow>
-          <TableCell>יום</TableCell>
-          <TableCell>משעה</TableCell>
-          <TableCell>עד שעה</TableCell>
-          <TableCell>פעולות</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {timeLimits.map((limit) => (
-          <TableRow key={limit.id}>
-            <TableCell>{getDayName(limit.dayId)}</TableCell>
-            <TableCell>{formatDecimalHour(limit.fromHour)}</TableCell>
-            <TableCell>{formatDecimalHour(limit.toHour)}</TableCell>
-            <TableCell>
-              <IconButton aria-label="delete" color="error" onClick={() => handleDelete(limit.id)}>
-                <DeleteIcon />
-              </IconButton>
-            </TableCell>
+    <TableContainer sx={{ width: "100%", overflowX: "auto" }}>
+      <Table size="small" sx={{ minWidth: 360 }}>
+        <TableHead>
+          <TableRow>
+            <TableCell>יום</TableCell>
+            <TableCell>משעה</TableCell>
+            <TableCell>עד שעה</TableCell>
+            <TableCell>פעולות</TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHead>
+        <TableBody>
+          {timeLimits.map((limit) => (
+            <TableRow key={limit.id}>
+              <TableCell>{getDayName(limit.dayId)}</TableCell>
+              <TableCell>{formatDecimalHour(limit.fromHour)}</TableCell>
+              <TableCell>{formatDecimalHour(limit.toHour)}</TableCell>
+              <TableCell>
+                <IconButton aria-label="delete" color="error" onClick={() => handleDelete(limit.id)}>
+                  <DeleteIcon />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
 

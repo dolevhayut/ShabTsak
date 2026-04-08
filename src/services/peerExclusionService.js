@@ -4,13 +4,16 @@ import { getCredentials } from "./authCredentials";
 
 export const getPeerExclusionsByGuardId = async (guardId, campId) => {
     try {
-        const { data, error } = await supabase
-            .from("guard_peer_exclusions")
-            .select("*")
-            .eq("guardId", guardId)
-            .eq("campId", campId);
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_guards_with_limits", {
+            ...creds,
+            p_camp_id: Number(campId),
+        });
         if (error) throw error;
-        return data;
+        const guardsWithLimits = Array.isArray(data) ? data : [];
+        const guardEntry = guardsWithLimits.find((row) => row?.guard?.id === Number(guardId));
+        const peerExclusions = Array.isArray(guardEntry?.peer_exclusions) ? guardEntry.peer_exclusions : [];
+        return peerExclusions.filter((row) => row.guardId === Number(guardId));
     } catch (error) {
         console.error(error);
         throw new Error("Unable to fetch peer exclusions");

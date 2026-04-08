@@ -50,7 +50,16 @@ const GuardProfile = () => {
   const joinedAt = guard.joinedAt || "—";
 
   return (
-    <Card style={{ minWidth: 450, maxWidth: 700, margin: "auto", marginTop: "20px", padding: "16px" }}>
+    <Card
+      sx={{
+        width: "100%",
+        minWidth: 0,
+        maxWidth: { xs: "100%", sm: 700 },
+        mx: "auto",
+        mt: 2,
+        p: { xs: 1, sm: 2 },
+      }}
+    >
       <CardContent>
         <Avatar
           alt={guard.name}

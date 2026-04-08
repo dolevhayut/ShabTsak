@@ -13,6 +13,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
 } from "@mui/material";
@@ -106,28 +107,30 @@ const GuardProfileDayLimit = ({ guardId, readOnly }) => {
       </Dialog>
 
       {dayLimits && dayLimits.length > 0 && (
-        <Table size="small" sx={{ mt: 1 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell>יום</TableCell>
-              {!readOnly && <TableCell align="right">פעולות</TableCell>}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {dayLimits.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{getDayName(row.dayId)}</TableCell>
-                {!readOnly && (
-                  <TableCell align="right">
-                    <Button size="small" color="error" onClick={() => deleteMutation.mutate(row.id)}>
-                      מחק
-                    </Button>
-                  </TableCell>
-                )}
+        <TableContainer sx={{ width: "100%", overflowX: "auto", mt: 1 }}>
+          <Table size="small" sx={{ minWidth: 280 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>יום</TableCell>
+                {!readOnly && <TableCell align="right">פעולות</TableCell>}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {dayLimits.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{getDayName(row.dayId)}</TableCell>
+                  {!readOnly && (
+                    <TableCell align="right">
+                      <Button size="small" color="error" onClick={() => deleteMutation.mutate(row.id)}>
+                        מחק
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </>
   );

@@ -15,6 +15,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
 } from "@mui/material";
@@ -112,28 +113,30 @@ const GuardProfilePeerExclusion = ({ guardId, campId, readOnly }) => {
       </Dialog>
 
       {exclusions && exclusions.length > 0 && (
-        <Table size="small" sx={{ mt: 1 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell>לא לשבץ עם</TableCell>
-              {!readOnly && <TableCell align="right">פעולות</TableCell>}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {exclusions.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{nameById(row.excludedGuardId)}</TableCell>
-                {!readOnly && (
-                  <TableCell align="right">
-                    <Button size="small" color="error" onClick={() => deleteMutation.mutate(row.id)}>
-                      מחק
-                    </Button>
-                  </TableCell>
-                )}
+        <TableContainer sx={{ width: "100%", overflowX: "auto", mt: 1 }}>
+          <Table size="small" sx={{ minWidth: 320 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>לא לשבץ עם</TableCell>
+                {!readOnly && <TableCell align="right">פעולות</TableCell>}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {exclusions.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{nameById(row.excludedGuardId)}</TableCell>
+                  {!readOnly && (
+                    <TableCell align="right">
+                      <Button size="small" color="error" onClick={() => deleteMutation.mutate(row.id)}>
+                        מחק
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </>
   );
