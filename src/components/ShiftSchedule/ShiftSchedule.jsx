@@ -183,6 +183,10 @@ function ShiftSchedule() {
     setExtraDays(0);
   }, []);
 
+  const loadMoreDays = useCallback(() => {
+    setExtraDays((prev) => prev + 2);
+  }, []);
+
   const renderedDays = useMemo(() => {
     if (currentView !== "day") return [currentDate];
     const days = [];
@@ -1351,6 +1355,11 @@ function ShiftSchedule() {
                   );
                 })}
                 <div ref={sentinelRef} style={{ height: 1 }} />
+                <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
+                  <Button variant="outlined" onClick={loadMoreDays}>
+                    הצג עוד ימים
+                  </Button>
+                </Box>
               </div>
             </div>
           ) : (
