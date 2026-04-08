@@ -26,17 +26,12 @@ export async function createShiftRequest(payload) {
 
 export async function getShiftRequestsByCamp(campId, status = "pending") {
   try {
-    let query = supabase
-      .from("shift_requests")
-      .select("*")
-      .eq("campId", campId)
-      .order("createdAt", { ascending: false });
-
-    if (status) {
-      query = query.eq("status", status);
-    }
-
-    const { data, error } = await query;
+    const creds = getCredentials();
+    const { data, error } = await supabase.rpc("rpc_get_shift_requests_by_camp", {
+      ...creds,
+      p_camp_id: campId,
+      p_status: status || null,
+    });
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -48,11 +43,10 @@ export async function getShiftRequestsByCamp(campId, status = "pending") {
 
 export async function getShiftRequestsByUser(requesterUserId) {
   try {
-    const { data, error } = await supabase
-      .from("shift_requests")
-      .select("*")
-      .eq("requesterUserId", requesterUserId)
-      .order("createdAt", { ascending: false });
+    const creds = getCredentials();
+    const { data, error } = await supabase.rpc("rpc_get_my_shift_requests", {
+      ...creds,
+    });
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -64,11 +58,11 @@ export async function getShiftRequestsByUser(requesterUserId) {
 
 export async function getShiftRequestsByGuardId(guardId) {
   try {
-    const { data, error } = await supabase
-      .from("shift_requests")
-      .select("*")
-      .eq("requesterGuardId", guardId)
-      .order("createdAt", { ascending: false });
+    const creds = getCredentials();
+    const { data, error } = await supabase.rpc("rpc_get_shift_requests_by_guard", {
+      ...creds,
+      p_guard_id: guardId,
+    });
     if (error) throw error;
     return data || [];
   } catch (error) {

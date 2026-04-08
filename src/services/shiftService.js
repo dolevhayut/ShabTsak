@@ -4,12 +4,11 @@ import { getCredentials } from "./authCredentials";
 
 export async function getShiftsByOutpostId(outpostId) {
     try {
-        const { data, error } = await supabase
-            .from("shifts")
-            .select("*")
-            .eq("outpostId", outpostId)
-            .order("dayId")
-            .order("fromHour");
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_shifts_by_outpost", {
+            ...creds,
+            p_outpost_id: outpostId,
+        });
         if (error) throw error;
         return data;
     } catch (err) {

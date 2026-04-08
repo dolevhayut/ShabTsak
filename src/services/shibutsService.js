@@ -42,6 +42,7 @@ export async function createOrUpdateShibuts(bodyFormData) {
 
 export async function getShibutsimOfCurrentMonthByCampId(campId, shibutsDates) {
     try {
+        const creds = getCredentials();
         let startTs, endTs;
         if (shibutsDates) {
             startTs = shibutsDates[0].getTime();
@@ -54,12 +55,12 @@ export async function getShibutsimOfCurrentMonthByCampId(campId, shibutsDates) {
             endTs = last.getTime();
         }
 
-        const { data, error } = await supabase
-            .from("shibuts")
-            .select("*")
-            .eq("campId", campId)
-            .gte("theDate", startTs)
-            .lte("theDate", endTs);
+        const { data, error } = await supabase.rpc("rpc_get_shibuts_by_camp", {
+            ...creds,
+            p_camp_id: campId,
+            p_start_ts: startTs,
+            p_end_ts: endTs,
+        });
         if (error) throw error;
         return data;
     } catch (err) {
@@ -110,24 +111,16 @@ export async function deleteShibuts(shibutsId) {
 
 export async function getShibutsimByGuardAndCamp(guardId, campId, dateRange) {
     try {
-        if (!guardId || !campId) {
-            return [];
-        }
+        if (!guardId || !campId) return [];
+        const creds = getCredentials();
 
-        let query = supabase
-            .from("shibuts")
-            .select("*")
-            .eq("guardId", guardId)
-            .eq("campId", campId)
-            .order("theDate", { ascending: true });
-
-        if (dateRange?.length === 2) {
-            query = query
-                .gte("theDate", dateRange[0].getTime())
-                .lte("theDate", dateRange[1].getTime());
-        }
-
-        const { data, error } = await query;
+        const { data, error } = await supabase.rpc("rpc_get_shibuts_by_guard", {
+            ...creds,
+            p_guard_id: guardId,
+            p_camp_id: campId,
+            p_start_ts: dateRange?.length === 2 ? dateRange[0].getTime() : null,
+            p_end_ts:   dateRange?.length === 2 ? dateRange[1].getTime() : null,
+        });
         if (error) throw error;
         return data || [];
     } catch (err) {
@@ -139,25 +132,13 @@ export async function getShibutsimByGuardAndCamp(guardId, campId, dateRange) {
 
 export async function getNextShibutsForGuard(guardId) {
     try {
-        const nowTs = new Date().setHours(0, 0, 0, 0); // start of today
-
-        const { data: shibutsRow, error } = await supabase
-            .from("shibuts")
-            .select("*")
-            .eq("guardId", guardId)
-            .gte("theDate", nowTs)
-            .order("theDate", { ascending: true })
-            .limit(1)
-            .maybeSingle();
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_next_shibuts_for_guard", {
+            ...creds,
+            p_guard_id: guardId,
+        });
         if (error) throw error;
-        if (!shibutsRow) return null;
-
-        const [{ data: shiftRow }, { data: outpostRow }] = await Promise.all([
-            supabase.from("shifts").select("id, name, startHour, endHour").eq("id", shibutsRow.shiftId).maybeSingle(),
-            supabase.from("outposts").select("id, name").eq("id", shibutsRow.outpostId).maybeSingle(),
-        ]);
-
-        return { ...shibutsRow, shifts: shiftRow, outposts: outpostRow };
+        return data || null;
     } catch (err) {
         console.error(err);
         return null;
@@ -166,13 +147,13 @@ export async function getNextShibutsForGuard(guardId) {
 
 export async function getShibutsById(shibutsId) {
     try {
-        const { data, error } = await supabase
-            .from("shibuts")
-            .select("*")
-            .eq("id", shibutsId)
-            .maybeSingle();
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_shibuts_by_id", {
+            ...creds,
+            p_shibuts_id: shibutsId,
+        });
         if (error) throw error;
-        return data;
+        return Array.isArray(data) ? data[0] : data;
     } catch (err) {
         console.error(err);
         toast.error("יש בעיה בשליפת השיבוץ");
@@ -209,9 +190,7 @@ export async function moveShibutsToDate(shibutsId, nextDateInput) {
     try {
         const creds = getCredentials();
         const nextDate = new Date(nextDateInput);
-        if (Number.isNaN(nextDate.getTime())) {
-            throw new Error("invalid date");
-        }
+        if (Number.isNaN(nextDate.getTime())) throw new Error("invalid date");
 
         const midnightTs = new Date(
             nextDate.getFullYear(),

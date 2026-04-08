@@ -4,11 +4,11 @@ import { getCredentials } from "./authCredentials";
 
 export async function getOutpostsByCampId(campId) {
     try {
-        const { data, error } = await supabase
-            .from("outposts")
-            .select("*")
-            .eq("campId", campId)
-            .order("id");
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_outposts_by_camp", {
+            ...creds,
+            p_camp_id: campId,
+        });
         if (error) throw error;
         return data;
     } catch (err) {
@@ -48,11 +48,11 @@ export async function createOrUpdateOutpost(bodyFormData, method, prevItemForUpd
 
 export async function getOutpostsAndShiftsForCampId(campId) {
     try {
-        const { data, error } = await supabase
-            .from("outposts")
-            .select("*, shifts(*)")
-            .eq("campId", campId)
-            .order("id");
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_outposts_with_shifts", {
+            ...creds,
+            p_camp_id: campId,
+        });
         if (error) throw error;
         return data;
     } catch (err) {
