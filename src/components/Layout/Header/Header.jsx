@@ -63,6 +63,7 @@ const getRoleLabel = (role) => {
 const Header = () => {
   const { user, logout } = useAuthContext();
   const navLinks = getNavLinks(user);
+  const mobileNavLinks = navLinks.filter((link) => link.to !== ROUTES.COMMANDER_ONBOARDING);
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [displayBurger, setDisplayBurger] = useState("block");
@@ -317,7 +318,7 @@ const Header = () => {
               },
             }}
           >
-            {navLinks.map((link) => {
+            {mobileNavLinks.map((link) => {
               const NavIcon = link.Icon;
               return (
                 <MenuItem

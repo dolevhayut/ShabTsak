@@ -4,12 +4,15 @@ import { getCredentials } from "./authCredentials";
 
 export async function getCamps(includeRegistrationCode = false) {
     try {
-        const columns = includeRegistrationCode ? "*" : "id, name, created_at";
-        const { data, error } = await supabase
-            .from("camps")
-            .select(columns)
-            .order("id");
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_my_camps", {
+            p_user_id: creds.p_user_id,
+            p_phone:   creds.p_phone,
+        });
         if (error) throw error;
+        if (!includeRegistrationCode && data) {
+            return data.map(({ id, name, created_at }) => ({ id, name, created_at }));
+        }
         return data;
     } catch (err) {
         console.log(err);
