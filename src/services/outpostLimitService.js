@@ -3,12 +3,14 @@ import { getCredentials } from "./authCredentials";
 
 export const getGuardOutpostLimitByGuardId = async (guardId, _campId) => {
     try {
-        const { data, error } = await supabase
-            .from("guard_outpost_limits")
-            .select("*")
-            .eq("guardId", guardId);
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_guard_limits", {
+            ...creds,
+            p_guard_id: Number(guardId),
+        });
         if (error) throw error;
-        return data;
+        const row = Array.isArray(data) ? data[0] : data;
+        return row?.outpost_limits || [];
     } catch (error) {
         throw new Error("Unable to fetch outpost limit");
     }

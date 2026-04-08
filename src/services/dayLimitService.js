@@ -37,11 +37,17 @@ export const createDayLimit = async (guardId, dayId) => {
 
 export const getGuardDayLimits = async (guardId) => {
     try {
-        const { data, error } = await supabase.from("guard_day_limits").select("*").eq("guardId", guardId);
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_guard_limits", {
+            ...creds,
+            p_guard_id: Number(guardId),
+        });
         if (error) throw error;
-        return data;
+        const row = Array.isArray(data) ? data[0] : data;
+        return row?.day_limits || [];
     } catch (error) {
         console.log(error);
         toast.error("נכשל בטעינת מגבלות הימים של החייל");
+        return [];
     }
 };

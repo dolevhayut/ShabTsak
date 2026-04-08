@@ -1,5 +1,6 @@
 {
   "name": "vite-project",
+  "description": "שבצקון – ניהול משמרות חכם לכיתות כוננות (בולדוג פתרונות מדיה)",
   "private": true,
   "version": "0.0.0",
   "type": "module",
