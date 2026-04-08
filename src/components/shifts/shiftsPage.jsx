@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "react-query";
-import { Container, Typography } from "@mui/material";
+import { Box, Button, Container, Typography } from "@mui/material";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import AddShiftBtn from "./addShiftBtn/addShiftBtn";
 import DialogShift from "./shiftDialog";
+import AutoGenerateShiftsDialog from "./autoGenerateShiftsDialog";
 import ShiftList from "./shiftList/shiftList";
 import BackLink from "../general_comps/BackLink.jsx";
 import LoadingComp from "../general_comps/LoadingComp.jsx";
@@ -15,6 +15,7 @@ export default function ShiftsPage() {
     const params = useParams();
     const isCommander = useIsCommander();
     const [openDialog, setOpenDialog] = useState(false);
+    const [openAutoDialog, setOpenAutoDialog] = useState(false);
     const [item, setItem] = useState(null);
     const outpostId = params["id"];
 
@@ -43,7 +44,35 @@ export default function ShiftsPage() {
     return (
         <div className="shifts-page">
             <Container maxWidth={false} disableGutters>
-                {isCommander && <AddShiftBtn setOpenDialog={setOpenDialog}/>}
+                {isCommander && (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            alignItems: "center",
+                            gap: 2,
+                            marginTop: "20px",
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => setOpenAutoDialog(true)}
+                        >
+                            יצירה אוטומטית
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="contained"
+                            color="primary"
+                            onClick={() => setOpenDialog(true)}
+                        >
+                            הוסף משמרת
+                        </Button>
+                    </Box>
+                )}
 
                 <Typography variant="h2" component="h1" mb={3}>
                     רשימת משמרות {params["name"]}
@@ -59,6 +88,12 @@ export default function ShiftsPage() {
                     <ShiftList shifts={shifts} onDuplciateShift={onDuplicateShift}/>
                 )}
 
+                {isCommander && openAutoDialog && (
+                    <AutoGenerateShiftsDialog
+                        onClose={() => setOpenAutoDialog(false)}
+                        outpostId={outpostId}
+                    />
+                )}
                 {isCommander && openDialog && (
                     <DialogShift
                         onCloseDialog={() => {
