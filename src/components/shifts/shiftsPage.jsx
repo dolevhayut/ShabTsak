@@ -1,21 +1,37 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "react-query";
-import { Box, Button, Container, Typography } from "@mui/material";
+import { useQuery, useQueryClient } from "react-query";
+import {
+    Box,
+    Button,
+    Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Typography,
+} from "@mui/material";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import DialogShift from "./shiftDialog";
 import AutoGenerateShiftsDialog from "./autoGenerateShiftsDialog";
 import ShiftList from "./shiftList/shiftList";
 import BackLink from "../general_comps/BackLink.jsx";
 import LoadingComp from "../general_comps/LoadingComp.jsx";
-import { getShiftsByOutpostId } from "@/services/shiftService.js";
+import {
+    deleteAllShiftsForOutpost,
+    getShiftsByOutpostId,
+} from "@/services/shiftService.js";
+import { toast } from "@/services/notificationService";
 import { useIsCommander } from "@/hooks/useIsCommander";
 
 export default function ShiftsPage() {
     const params = useParams();
+    const queryClient = useQueryClient();
     const isCommander = useIsCommander();
     const [openDialog, setOpenDialog] = useState(false);
     const [openAutoDialog, setOpenAutoDialog] = useState(false);
+    const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+    const [deletingAll, setDeletingAll] = useState(false);
     const [item, setItem] = useState(null);
     const outpostId = params["id"];
 
@@ -39,6 +55,30 @@ export default function ShiftsPage() {
         const { dayId, id, ...dupedShift } = shift;
         setItem(dupedShift);
         setOpenDialog(true);
+    }
+
+    async function handleDeleteAllShifts() {
+        const idNum = Number(outpostId);
+        if (!Number.isFinite(idNum)) {
+            toast.error("מזהה עמדה לא תקין");
+            return;
+        }
+        setDeletingAll(true);
+        try {
+            const n = await deleteAllShiftsForOutpost(idNum);
+            if (n === 0) {
+                toast.info("אין משמרות למחוק");
+            } else {
+                toast.success(`נמחקו ${n} משמרות`);
+            }
+            await queryClient.invalidateQueries(["shifts", outpostId]);
+            setDeleteAllOpen(false);
+        } catch (e) {
+            console.error(e);
+            toast.error("שגיאה במחיקת המשמרות");
+        } finally {
+            setDeletingAll(false);
+        }
     }
 
     return (
@@ -70,6 +110,15 @@ export default function ShiftsPage() {
                             onClick={() => setOpenDialog(true)}
                         >
                             הוסף משמרת
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            color="error"
+                            disabled={isLoading || !shifts?.length}
+                            onClick={() => setDeleteAllOpen(true)}
+                        >
+                            מחק הכל
                         </Button>
                     </Box>
                 )}
@@ -103,6 +152,36 @@ export default function ShiftsPage() {
                         method="POST"
                         item={item}
                     />
+                )}
+                {isCommander && (
+                    <Dialog
+                        open={deleteAllOpen}
+                        onClose={() => !deletingAll && setDeleteAllOpen(false)}
+                    >
+                        <DialogTitle>מחיקת כל המשמרות</DialogTitle>
+                        <DialogContent>
+                            <Typography variant="body1">
+                                למחוק את כל המשמרות של העמדה &quot;{params["name"]}
+                                &quot;? פעולה זו אינה ניתנת לביטול.
+                            </Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                onClick={() => setDeleteAllOpen(false)}
+                                disabled={deletingAll}
+                            >
+                                ביטול
+                            </Button>
+                            <Button
+                                color="error"
+                                variant="contained"
+                                disabled={deletingAll}
+                                onClick={handleDeleteAllShifts}
+                            >
+                                {deletingAll ? "מוחק…" : "מחק הכל"}
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                 )}
                 <BackLink place="end" icon={<ArrowBackIosIcon/>}>
                     חזרה לרשימת העמדות

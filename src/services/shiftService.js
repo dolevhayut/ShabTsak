@@ -95,6 +95,34 @@ export async function generateShiftsForOutpost({
     return { created, skipped };
 }
 
+/**
+ * מוחק את כל המשמרות של העמדה (אחת־אחת דרך rpc_delete_shift).
+ * @param {number} outpostId
+ * @returns {Promise<number>} מספר המשמרות שנמחקו
+ */
+export async function deleteAllShiftsForOutpost(outpostId) {
+    const creds = getCredentials();
+    const { data: rows, error: fetchErr } = await supabase.rpc(
+        "rpc_get_shifts_by_outpost",
+        {
+            ...creds,
+            p_outpost_id: outpostId,
+        },
+    );
+    if (fetchErr) throw fetchErr;
+    const list = rows ?? [];
+    let deleted = 0;
+    for (const row of list) {
+        const { error } = await supabase.rpc("rpc_delete_shift", {
+            ...creds,
+            p_shift_id: row.id,
+        });
+        if (error) throw error;
+        deleted += 1;
+    }
+    return deleted;
+}
+
 export async function createOrUpdateShift(bodyFormData, method = "POST") {
     try {
         const creds = getCredentials();
