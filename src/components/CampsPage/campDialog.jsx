@@ -74,8 +74,9 @@ function CampDialog({ openDialog, setOpenDialog, method, item }) {
                             <TextField
                                 {...register("registration_code", {
                                     required: { value: true, message: "חובה לשמור קוד הרשמה לחיילים" },
-                                    minLength: { value: 4, message: "קוד קצר מדי" },
-                                    maxLength: { value: 32, message: "קוד ארוך מדי" },
+                                    minLength: { value: 4, message: "הקוד חייב להיות 4 ספרות" },
+                                    maxLength: { value: 4, message: "הקוד חייב להיות 4 ספרות" },
+                                    pattern: { value: /^[0-9]{4}$/, message: "הקוד חייב להכיל 4 ספרות בלבד" },
                                 })}
                                 variant="outlined"
                                 fullWidth
@@ -85,7 +86,7 @@ function CampDialog({ openDialog, setOpenDialog, method, item }) {
                                 error={!!errors.registration_code}
                                 helperText={
                                     errors.registration_code?.message ||
-                                    "החיילים מזינים קוד זה בעמוד ההרשמה. אפשר לשנות ולשתף מחדש."
+                                    "החיילים מזינים קוד בן 4 ספרות בעמוד ההרשמה."
                                 }
                             />
                         )}

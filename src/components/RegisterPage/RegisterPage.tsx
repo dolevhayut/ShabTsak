@@ -69,9 +69,12 @@ export default function RegisterPage() {
                             onChange={(e) => setCampCode(e.target.value)}
                             autoComplete="off"
                             inputProps={{
+                                inputMode: "numeric",
+                                pattern: "[0-9]*",
+                                maxLength: 4,
                                 style: { fontFamily: "ui-monospace, monospace", letterSpacing: "0.08em" },
                             }}
-                            helperText={initialCampCode ? "הקוד הוזן אוטומטית מהלינק" : "אותיות ומספרים — ללא רווחים מיותרים"}
+                            helperText={initialCampCode ? "הקוד הוזן אוטומטית מהלינק (4 ספרות)" : "יש להזין 4 ספרות"}
                         />
                         <TextField
                             fullWidth
