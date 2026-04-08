@@ -96,6 +96,27 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
 
 /* ── react-big-calendar ── */
 .rbc-resource-header { min-width: 6rem; }
+.rbc-allday-cell { display: none; }
+.rbc-time-view .rbc-header { border-bottom: none; }
+.rbc-time-view { overflow: visible; }
+.rbc-time-content { overflow: visible !important; max-height: none !important; }
+
+/* ── Infinite-day seamless scroll ── */
+.rbc-day-continuation .rbc-time-header { display: none; }
+.rbc-day-continuation .rbc-time-view { border-top: none; }
+
+.day-divider-label {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 4px 0;
+  letter-spacing: 0.02em;
+}
 
 /* ── NagishLi icon ── */
 #NagishLiTrigger {

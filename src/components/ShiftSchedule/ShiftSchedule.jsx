@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { format, parse, startOfWeek, getDay, addDays } from "date-fns";
 import he from "date-fns/locale/he";
 import { getOutpostsAndShiftsForCampId } from "@/services/outpostService.js";
 import { createOrUpdateShibuts, getShibutsimOfCurrentMonthByCampId, deleteShibuts, getAutoShibutsimByCampIdAndDates, deleteAutoShibutsim } from "@/services/shibutsService.js";
@@ -38,6 +38,8 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
+import SettingsIcon from "@mui/icons-material/Settings";
+import CampSettingsDialog from "@/components/CampSettingsDialog/CampSettingsDialog";
 import { getShibutsEvents, addShibutsEvent, deleteShibutsEvent } from "@/services/shibutsEventService";
 import { getGuardLinkByUserId } from "@/services/userGuardLinkService";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -131,12 +133,15 @@ function ShiftSchedule() {
   const [campId, setCampId] = useState(null);
   const [autoShibutsStartDate, setAutoShibutsStartDate] = useState(null);
   const [autoShibutsEndDate, setAutoShibutsEndDate] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isLoading, withLoading] = useLoading();
   const [shibutsim, setShibutsim] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedOutpostIds, setSelectedOutpostIds] = useState(null);
   const [currentView, setCurrentView] = useState("day");
   const [durationAdjustHours, setDurationAdjustHours] = useState(0.5);
+  const [extraDays, setExtraDays] = useState(0);
+  const sentinelRef = useRef(null);
 
   // ── אירועים / דיווחים ─────────────────────────────────────────────────────
   const [events, setEvents] = useState([]);
@@ -144,6 +149,32 @@ function ShiftSchedule() {
   const [newEventContent, setNewEventContent] = useState("");
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [currentUserGuardId, setCurrentUserGuardId] = useState(null);
+
+  useEffect(() => {
+    if (currentView !== "day") return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setExtraDays((prev) => prev + 2); },
+      { rootMargin: "400px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [currentView, extraDays]);
+
+  const handleNavigate = useCallback((newDate) => {
+    setCurrentDate(newDate);
+    setExtraDays(0);
+  }, []);
+
+  const renderedDays = useMemo(() => {
+    if (currentView !== "day") return [currentDate];
+    const days = [];
+    for (let i = 0; i <= extraDays; i++) {
+      days.push(addDays(currentDate, i));
+    }
+    return days;
+  }, [currentDate, extraDays, currentView]);
 
   const fallbackColors = useMemo(() => {
     return ["#4B6B2A", "#16A34A", "#DC2626", "#D97706", "#7C3AED", "#0891B2", "#BE185D", "#4F46E5"];
@@ -723,24 +754,24 @@ function ShiftSchedule() {
     }));
   }, [outposts, visibleOutpostIds]);
 
-  // ── תאריכים גלויים לפי תצוגה ────────────────────────────────────────────
   const visibleDates = useMemo(() => {
-    const dates = [];
-    if (currentView === "day") {
-      const d = new Date(currentDate);
-      d.setHours(0, 0, 0, 0);
-      dates.push(d);
-    } else {
+    if (currentView !== "day") {
       const weekStart = startOfWeek(new Date(currentDate), { weekStartsOn: 0 });
+      const dates = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
         d.setDate(weekStart.getDate() + i);
         d.setHours(0, 0, 0, 0);
         dates.push(d);
       }
+      return dates;
     }
-    return dates;
-  }, [currentDate, currentView]);
+    return renderedDays.map((d) => {
+      const copy = new Date(d);
+      copy.setHours(0, 0, 0, 0);
+      return copy;
+    });
+  }, [currentDate, currentView, renderedDays]);
 
   // ── מינימום שומרים לפי עמדה ──────────────────────────────────────────────
   const outpostMinGuards = useMemo(() => {
@@ -772,22 +803,25 @@ function ShiftSchedule() {
         const nextMidnight = new Date(segmentStart);
         nextMidnight.setDate(nextMidnight.getDate() + 1);
         nextMidnight.setHours(0, 0, 0, 0);
-        const isLastSegmentOfDay = originalEnd >= nextMidnight;
-        const segmentEnd = originalEnd < nextMidnight ? new Date(originalEnd) : nextMidnight;
+        const crossesMidnight = originalEnd > nextMidnight;
+        const segmentEnd = crossesMidnight ? nextMidnight : new Date(originalEnd);
         const isFromPreviousDay = segmentStart.getTime() > originalStart.getTime();
 
         const displayEnd = new Date(segmentEnd);
-        if (isLastSegmentOfDay) {
-          displayEnd.setTime(nextMidnight.getTime() - 1000);
+        if (crossesMidnight || segmentEnd.getTime() === nextMidnight.getTime()) {
+          displayEnd.setHours(23, 59, 0, 0);
+          displayEnd.setFullYear(segmentStart.getFullYear(), segmentStart.getMonth(), segmentStart.getDate());
         }
 
-        splitEvents.push({
-          ...baseEvent,
-          id: `${s.shibutsId || idx}-${segmentIndex}`,
-          start: new Date(segmentStart),
-          end: displayEnd,
-          isFromPreviousDay,
-        });
+        if (displayEnd > segmentStart) {
+          splitEvents.push({
+            ...baseEvent,
+            id: `${s.shibutsId || idx}-${segmentIndex}`,
+            start: new Date(segmentStart),
+            end: displayEnd,
+            isFromPreviousDay,
+          });
+        }
 
         segmentStart = new Date(segmentEnd);
         segmentIndex += 1;
@@ -824,8 +858,12 @@ function ShiftSchedule() {
             const start = new Date(date);
             start.setHours(shift.fromHour, 0, 0, 0);
             const end = new Date(date);
-            end.setHours(shift.toHour === 24 ? 0 : shift.toHour, 0, 0, 0);
-            if (end <= start) end.setDate(end.getDate() + 1);
+            if (shift.toHour >= 24) {
+              end.setHours(23, 59, 0, 0);
+            } else {
+              end.setHours(shift.toHour, 0, 0, 0);
+              if (end <= start) end.setDate(end.getDate() + 1);
+            }
 
             phantoms.push({
               id: `phantom-${outpost.id}-${shift.id}-${dateKey}-${i}`,
@@ -968,6 +1006,11 @@ function ShiftSchedule() {
             <Button variant="contained" color="error" onClick={onDeleteAutoShibutsClick}>
               מחיקת שיבוצים
             </Button>
+            <Tooltip title="הגדרות שיבוץ אוטומטי">
+              <IconButton color="default" onClick={() => setSettingsOpen(true)}>
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
         </LocalizationProvider>
       )}
@@ -1006,36 +1049,94 @@ function ShiftSchedule() {
         <LoadingComp />
       ) : (
         <>
-          <div style={{ height: "70vh" }}>
-            <Calendar
-              localizer={localizer}
-              culture="he"
-              events={calendarEvents}
-              dayLayoutAlgorithm="no-overlap"
-              resources={resources}
-              resourceIdAccessor="resourceId"
-              resourceTitleAccessor="resourceTitle"
-              startAccessor="start"
-              endAccessor="end"
-              defaultView="day"
-              view={currentView}
-              onView={setCurrentView}
-              views={["day", "week"]}
-              step={15}
-              timeslots={4}
-              date={currentDate}
-              onNavigate={setCurrentDate}
-              selectable={isCommander}
-              onSelectSlot={isCommander ? handleSelectSlot : undefined}
-              onSelectEvent={onShibutsClick}
-              eventPropGetter={eventPropGetter}
-              components={{ event: EventComponent }}
-              messages={messages}
-              formats={rtlFormats}
-              rtl={true}
-              style={{ minHeight: 500 }}
-            />
-          </div>
+          {currentView === "day" ? (
+            <div className="infinite-day-scroll">
+              {renderedDays.map((day, dayIdx) => {
+                const dayStart = new Date(day);
+                dayStart.setHours(0, 0, 0, 0);
+                const dayEnd = new Date(dayStart);
+                dayEnd.setDate(dayEnd.getDate() + 1);
+                const dayEvents = calendarEvents.filter((e) => {
+                  const s = e.start.getTime();
+                  return s >= dayStart.getTime() && s < dayEnd.getTime();
+                });
+                const isFollowUp = dayIdx > 0;
+                return (
+                  <div
+                    key={dayStart.getTime()}
+                    className={isFollowUp ? "rbc-day-continuation" : undefined}
+                  >
+                    {isFollowUp && (
+                      <div className="day-divider-label">
+                        {format(day, "EEEE dd/MM", { locale: he })}
+                      </div>
+                    )}
+                    <Calendar
+                      localizer={localizer}
+                      culture="he"
+                      events={dayEvents}
+                      dayLayoutAlgorithm="no-overlap"
+                      resources={resources}
+                      resourceIdAccessor="resourceId"
+                      resourceTitleAccessor="resourceTitle"
+                      startAccessor="start"
+                      endAccessor="end"
+                      defaultView="day"
+                      view="day"
+                      onView={setCurrentView}
+                      views={["day", "week"]}
+                      step={60}
+                      timeslots={1}
+                      date={day}
+                      onNavigate={handleNavigate}
+                      toolbar={dayIdx === 0}
+                      selectable={isCommander}
+                      onSelectSlot={isCommander ? handleSelectSlot : undefined}
+                      onSelectEvent={onShibutsClick}
+                      eventPropGetter={eventPropGetter}
+                      components={{ event: EventComponent }}
+                      messages={messages}
+                      formats={rtlFormats}
+                      rtl={true}
+                      style={{ height: "auto" }}
+                    />
+                  </div>
+                );
+              })}
+              <div ref={sentinelRef} style={{ height: 1 }} />
+            </div>
+          ) : (
+            <div style={{ height: "70vh" }}>
+              <Calendar
+                localizer={localizer}
+                culture="he"
+                events={calendarEvents}
+                dayLayoutAlgorithm="no-overlap"
+                resources={resources}
+                resourceIdAccessor="resourceId"
+                resourceTitleAccessor="resourceTitle"
+                startAccessor="start"
+                endAccessor="end"
+                defaultView="day"
+                view={currentView}
+                onView={setCurrentView}
+                views={["day", "week"]}
+                step={60}
+                timeslots={1}
+                date={currentDate}
+                onNavigate={handleNavigate}
+                selectable={isCommander}
+                onSelectSlot={isCommander ? handleSelectSlot : undefined}
+                onSelectEvent={onShibutsClick}
+                eventPropGetter={eventPropGetter}
+                components={{ event: EventComponent }}
+                messages={messages}
+                formats={rtlFormats}
+                rtl={true}
+                style={{ minHeight: 500 }}
+              />
+            </div>
+          )}
 
           <Dialog open={isPopupOpen} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle>
@@ -1263,6 +1364,11 @@ function ShiftSchedule() {
               )}
             </DialogActions>
           </Dialog>
+          <CampSettingsDialog
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            campId={campId}
+          />
         </>
       )}
     </div>

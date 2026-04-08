@@ -2,6 +2,44 @@ import { toast } from "@/services/notificationService";
 import { supabase } from "./supabaseClient";
 import { getCredentials } from "./authCredentials";
 
+export async function getCampSettings(campId) {
+    try {
+        const creds = getCredentials();
+        const { data, error } = await supabase.rpc("rpc_get_camp_settings", {
+            ...creds,
+            p_camp_id: campId,
+        });
+        if (error) throw error;
+        const raw = Array.isArray(data) ? data[0] : data;
+        if (!raw) return { camp_id: campId, min_rest_hours: 8 };
+        return {
+            camp_id: raw.out_camp_id ?? raw.camp_id ?? campId,
+            min_rest_hours: raw.out_min_rest_hours ?? raw.min_rest_hours ?? 8,
+        };
+    } catch (err) {
+        console.error(err);
+        toast.error("שגיאה בטעינת הגדרות הבסיס");
+        return { camp_id: campId, min_rest_hours: 8 };
+    }
+}
+
+export async function updateCampSettings(campId, settings) {
+    try {
+        const creds = getCredentials();
+        const { error } = await supabase.rpc("rpc_update_camp_settings", {
+            ...creds,
+            p_camp_id: campId,
+            p_min_rest_hours: settings.min_rest_hours,
+        });
+        if (error) throw error;
+        toast.success("הגדרות הבסיס עודכנו בהצלחה");
+    } catch (err) {
+        console.error(err);
+        toast.error("שגיאה בעדכון הגדרות הבסיס");
+        throw err;
+    }
+}
+
 export async function getCamps(includeRegistrationCode = false) {
     try {
         const creds = getCredentials();
