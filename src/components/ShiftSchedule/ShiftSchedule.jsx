@@ -1,6 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { format, parse, startOfWeek, getDay, addDays } from "date-fns";
 import he from "date-fns/locale/he";
 import { getOutpostsAndShiftsForCampId } from "@/services/outpostService.js";
@@ -68,6 +70,7 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+const DnDCalendar = withDragAndDrop(Calendar);
 const lrm = "\u200E";
 const rtlFormats = {
   eventTimeRangeFormat: ({ start, end }, culture, currentLocalizer) => {
@@ -569,12 +572,25 @@ function ShiftSchedule() {
 
   const checkAnsSaveShibuts = useCallback(
     (shibutsToSave) => {
-      const isExistingShibuts = checkExistinShibuts(shibutsToSave);
-      if (shibutsToSave.guardId != 0 && !isExistingShibuts) {
-        saveShibuts(shibutsToSave);
+      if (!shibutsToSave.guardId || shibutsToSave.guardId == 0) return;
+
+      const duplicate = shibutsim.find(
+        (s) =>
+          s.guardId == shibutsToSave.guardId &&
+          s.shiftId == shibutsToSave.shiftId &&
+          s.outpostId == shibutsToSave.outpostId &&
+          s.start.getTime() == shibutsToSave.start.getTime() &&
+          s.shibutsId !== shibutsToSave.shibutsId
+      );
+      if (duplicate) {
+        const outpostName = outposts.find((o) => o.id == shibutsToSave.outpostId)?.name || "";
+        toast.error(`כבר קיים שיבוץ ל ${duplicate.guardName} בעמדה ${outpostName} בשעה ${getTimeStr(duplicate.end.getHours())}`);
+        return;
       }
+
+      saveShibuts(shibutsToSave);
     },
-    [checkExistinShibuts, saveShibuts]
+    [shibutsim, outposts, saveShibuts]
   );
 
   const handleSelectSlot = useCallback(
@@ -738,6 +754,83 @@ function ShiftSchedule() {
       toast.error("נא לבחור תאריכים לשיבוץ אוטומטי למחיקה");
     }
   }, [autoShibutsStartDate, autoShibutsEndDate, campId, mapShibutsim]);
+
+  // ── DnD accessors & handlers ──────────────────────────────────────────────
+  const draggableAccessor = useCallback(
+    (event) => {
+      if (!isCommander) return false;
+      if (event.isPhantom) return false;
+      if (event.isFromPreviousDay) return false;
+      return true;
+    },
+    [isCommander]
+  );
+
+  const resizableAccessor = useCallback(() => false, []);
+
+  const handleEventDrop = useCallback(
+    async ({ event, start: newStart, resourceId: newResourceId }) => {
+      if (event.isPhantom || event.isFromPreviousDay) return;
+
+      const dropTime = new Date(newStart).getTime();
+      const dropResource = newResourceId ?? event.outpostId ?? event.resource;
+
+      const target = shibutsim.find((s) => {
+        if (s.shibutsId === event.shibutsId) return false;
+        if (s.resource !== dropResource && s.outpostId !== dropResource) return false;
+        return dropTime >= s.start.getTime() && dropTime < s.end.getTime();
+      });
+
+      if (!target) {
+        toast.info("גרור קוביה על קוביה אחרת כדי להחליף שומרים");
+        return;
+      }
+
+      const aGuard = { guardId: event.guardId, guardName: event.guardName, color: event.color, title: event.guardName };
+      const bGuard = { guardId: target.guardId, guardName: target.guardName, color: target.color, title: target.guardName };
+
+      const updatedA = {
+        ...event,
+        ...bGuard,
+        outpostId: event.outpostId ?? event.resource,
+        campId,
+        id: event.shibutsId,
+        theDate: (event.originalStart || event.start).getTime(),
+        start: event.originalStart || event.start,
+        end: event.originalEnd || event.end,
+      };
+      const updatedB = {
+        ...target,
+        ...aGuard,
+        outpostId: target.outpostId ?? target.resource,
+        campId,
+        id: target.shibutsId,
+        theDate: target.start.getTime(),
+      };
+
+      const outpostA = outposts.find((o) => o.id == updatedA.outpostId);
+      const outpostB = outposts.find((o) => o.id == updatedB.outpostId);
+      updatedA.outpostName = outpostA?.name || "";
+      updatedB.outpostName = outpostB?.name || "";
+
+      try {
+        await withLoading(async () => {
+          await createOrUpdateShibuts(updatedA);
+          await createOrUpdateShibuts(updatedB);
+        });
+        const next = shibutsim.map((s) => {
+          if (s.shibutsId === event.shibutsId) return updatedA;
+          if (s.shibutsId === target.shibutsId) return updatedB;
+          return s;
+        });
+        setShibutsim(next);
+        toast.success(`הוחלף: ${aGuard.guardName} ↔ ${bGuard.guardName}`);
+      } catch { /* toasted inside service */ }
+    },
+    [outposts, shibutsim, campId]
+  );
+
+  const handleEventResize = useCallback(() => {}, []);
 
   const visibleOutpostIds = useMemo(() => {
     if (!Array.isArray(selectedOutpostIds)) return outposts.map((o) => o.id);
@@ -1071,7 +1164,7 @@ function ShiftSchedule() {
                         {format(day, "EEEE dd/MM", { locale: he })}
                       </div>
                     )}
-                    <Calendar
+                    <DnDCalendar
                       localizer={localizer}
                       culture="he"
                       events={dayEvents}
@@ -1093,6 +1186,10 @@ function ShiftSchedule() {
                       selectable={isCommander}
                       onSelectSlot={isCommander ? handleSelectSlot : undefined}
                       onSelectEvent={onShibutsClick}
+                      onEventDrop={isCommander ? handleEventDrop : undefined}
+                      onEventResize={isCommander ? handleEventResize : undefined}
+                      draggableAccessor={draggableAccessor}
+                      resizableAccessor={resizableAccessor}
                       eventPropGetter={eventPropGetter}
                       components={{ event: EventComponent }}
                       messages={messages}
@@ -1107,7 +1204,7 @@ function ShiftSchedule() {
             </div>
           ) : (
             <div style={{ height: "70vh" }}>
-              <Calendar
+              <DnDCalendar
                 localizer={localizer}
                 culture="he"
                 events={calendarEvents}
@@ -1128,6 +1225,10 @@ function ShiftSchedule() {
                 selectable={isCommander}
                 onSelectSlot={isCommander ? handleSelectSlot : undefined}
                 onSelectEvent={onShibutsClick}
+                onEventDrop={isCommander ? handleEventDrop : undefined}
+                onEventResize={isCommander ? handleEventResize : undefined}
+                draggableAccessor={draggableAccessor}
+                resizableAccessor={resizableAccessor}
                 eventPropGetter={eventPropGetter}
                 components={{ event: EventComponent }}
                 messages={messages}

@@ -133,6 +133,19 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
   word-break: break-word;
 }
 
+/* ── DnD cursor styles ── */
+.rbc-addons-dnd .rbc-event {
+  cursor: grab;
+}
+.rbc-addons-dnd .rbc-event:active,
+.rbc-addons-dnd .rbc-addons-dnd-dragging .rbc-event {
+  cursor: grabbing;
+}
+.rbc-addons-dnd .rbc-event.rbc-addons-dnd-drag-preview {
+  opacity: 0.65;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
