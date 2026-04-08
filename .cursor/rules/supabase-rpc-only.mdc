@@ -1,0 +1,60 @@
+---
+description: Enforce RPC-only Supabase queries — never query tables directly
+globs: src/services/**/*.{js,ts}
+alwaysApply: true
+---
+
+# Supabase — RPC Only (No Direct Table Reads)
+
+Since migration `006_secure_all_reads`, all RLS open-read policies have been removed.
+Direct `supabase.from("table").select(...)` on protected tables returns `[]` silently.
+
+## Rule: NEVER query tables directly from the frontend
+
+❌ Forbidden:
+```js
+supabase.from("shibuts").select(...)
+supabase.from("guards").select(...)
+supabase.from("outposts").select(...)
+supabase.from("shifts").select(...)
+supabase.from("shift_requests").select(...)
+supabase.from("system_messages").select(...)
+```
+
+✅ Always use the matching RPC:
+```js
+const creds = getCredentials(); // from "@/services/authCredentials"
+
+supabase.rpc("rpc_get_shibuts_by_camp",    { ...creds, p_camp_id, p_start_ts, p_end_ts })
+supabase.rpc("rpc_get_guards_by_camp",     { ...creds, p_camp_id })
+supabase.rpc("rpc_get_outposts_by_camp",   { ...creds, p_camp_id })
+supabase.rpc("rpc_get_shifts_by_outpost",  { ...creds, p_outpost_id })
+supabase.rpc("rpc_get_shift_requests_by_camp", { ...creds, p_camp_id })
+supabase.rpc("rpc_get_system_messages",    { ...creds, p_camp_id })
+```
+
+## Pattern for every new service function
+
+```js
+import { supabase } from "./supabaseClient";
+import { getCredentials } from "./authCredentials";
+
+export async function myNewDataFetcher(campId) {
+  const creds = getCredentials();
+  const { data, error } = await supabase.rpc("rpc_...", {
+    ...creds,
+    p_camp_id: campId,
+  });
+  if (error) throw error;
+  return data;
+}
+```
+
+## Adding a new data access need?
+
+If no matching RPC exists yet:
+1. Add a new `SECURITY DEFINER` function to `supabase/migrations/NNN_....sql`
+2. `GRANT EXECUTE ON FUNCTION ... TO anon`
+3. Call it from the service via `supabase.rpc(...)`
+
+Never add direct-read RLS policies back — the RPC pattern is the security boundary.
