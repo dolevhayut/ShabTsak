@@ -141,6 +141,11 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
   letter-spacing: 0.02em;
 }
 
+.infinite-day-scroll {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── NagishLi icon ── */
 #NagishLiTrigger {
   bottom: 20px;
@@ -172,6 +177,13 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
 
 @media (max-width: 600px) {
   :root { --bento-gap: 12px; }
+
+  .calendar-mobile-scroll-wrapper {
+    max-height: calc(100dvh - 230px);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 
   /* padding כללי במסכים קטנים */
   .MuiContainer-root {

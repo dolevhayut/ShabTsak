@@ -1,0 +1,158 @@
+---
+description: ShabTsak project conventions, architecture, database patterns, and deployment practices
+globs: "**/*.{js,jsx,ts,tsx,sql}"
+alwaysApply: true
+---
+
+# ShabTsak Project — Architecture & Best Practices
+
+## Project Overview
+
+ShabTsak is a military guard shift management app. React + Vite frontend, Supabase backend (PostgreSQL, Auth, RLS).
+Language: Hebrew UI. Code: English.
+
+## Tech Stack
+
+- **Frontend**: React 18, Vite, MUI (Material UI), React Router, RTL layout
+- **Backend**: Supabase (PostgreSQL 17), RPC-only pattern (no direct table access from frontend)
+- **Auth**: Supabase Auth, `assert_commander` function validates user+phone per RPC
+- **State**: React Context + local state, service layer in `src/services/`
+- **Deployment**: Supabase hosted DB, Vercel/Vite for frontend
+
+## Database Schema (key tables)
+
+| Table | Purpose |
+|---|---|
+| `users` | Auth users with role (commander/soldier) |
+| `camps` | Military camps/bases |
+| `guards` | Soldiers, `shouldBeAllocated` flag, belongs to camp |
+| `outposts` | Guard posts, `minGuards` per shift |
+| `shifts` | Shift templates: `dayId` (1=Sun..7=Sat), `fromHour`, `toHour` |
+| `shibuts` | Actual assignments: guard + shift + outpost + camp + `theDate` (epoch ms BIGINT) |
+| `guard_day_limits` | Day-of-week restrictions per guard |
+| `guard_time_limits` | Time-of-day restrictions per guard per day |
+| `guard_outpost_limits` | Outpost restrictions per guard |
+| `guard_peer_exclusions` | Guards that cannot serve together |
+| `camp_settings` | Per-camp config (e.g., `min_rest_hours`) |
+| `shift_requests` | Soldier shift swap/preference requests |
+
+## Critical Conventions
+
+### 1. Day ID Mapping
+- `shifts.dayId`: 1 = Sunday, 2 = Monday, ..., 7 = Saturday
+- JavaScript `getDay()`: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+- PostgreSQL `EXTRACT(DOW)`: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+- **Conversion in SQL**: `v_shift_day_id := EXTRACT(DOW FROM v_day)::INT + 1`
+
+### 2. Date Handling
+- `shibuts.theDate` is epoch milliseconds (BIGINT), NOT a DATE/TIMESTAMP
+- Always convert: `EXTRACT(EPOCH FROM v_day AT TIME ZONE 'UTC')::BIGINT * 1000`
+- Frontend passes `startTs` / `endTs` as epoch ms
+
+### 3. RPC-Only Pattern (enforced by RLS)
+- All RLS open-read policies removed since migration `006_secure_all_reads`
+- Direct `supabase.from("table").select(...)` returns `[]` silently
+- Always use `supabase.rpc("rpc_...", { ...getCredentials(), p_camp_id, ... })`
+- See `.cursor/rules/supabase-rpc-only.mdc` for full details
+
+### 4. Service Layer Pattern
+```js
+import { supabase } from "./supabaseClient";
+import { getCredentials } from "./authCredentials";
+
+export async function myFunction(campId, ...args) {
+  const creds = getCredentials();
+  const { data, error } = await supabase.rpc("rpc_function_name", {
+    ...creds,
+    p_camp_id: campId,
+  });
+  if (error) throw error;
+  return data;
+}
+```
+
+### 5. RPC Function Pattern (PostgreSQL)
+```sql
+CREATE OR REPLACE FUNCTION public.rpc_my_function(
+  p_user_id TEXT, p_phone TEXT, p_camp_id INT, ...
+) RETURNS ... LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  PERFORM public.assert_commander(p_user_id, p_phone);
+  -- logic here
+END;
+$$;
+```
+- Always `SECURITY DEFINER`
+- Always call `assert_commander` first for write operations
+- Use `camp_id` (snake_case) for `camp_settings` table columns
+- Use `"camelCase"` (quoted) for other tables following the existing schema
+
+## Auto-Assignment Algorithm (`rpc_auto_assign`)
+
+### Architecture: Best-of-N Internal Iteration
+The auto-assign function runs the assignment algorithm up to 20 times internally, scores each attempt, and commits only the best result. This is critical for achieving high-quality, diverse assignments.
+
+### Key Design Decisions
+1. **Randomized shift order**: `ORDER BY random()` when iterating shifts per day — prevents bias
+2. **Slot cap**: Max 5 assignments per guard per time-slot to prevent repetition
+3. **Two-pass per shift**: Pass 1 = guards not assigned today; Pass 2 = allow already-assigned guards
+4. **Two sub-passes per pass**: First under slot cap, then allow over cap as fallback
+5. **Guard ordering criteria** (priority order):
+   - Consecutive same-slot avoidance (was last assignment same slot?)
+   - Recency penalty (how many of last 3 assignments were this slot?)
+   - Total slot count (fewer = better)
+   - Total assignment fairness (fewer total = better)
+   - Outpost diversity (fewer at this outpost = better)
+   - Random tiebreak
+6. **Scoring function** (`_auto_assign_score`): `penalty = max_slot*100 + consec*10 + fair_range`
+7. **Early exit**: Stop iterating if score <= target (e.g., 410)
+8. **Temp table**: `_auto_assign_candidates` stores all attempts, only best is committed
+
+### Important: Don't Overwrite Manual Assignments
+- The function only fills empty slots — it checks existing `shibuts` and skips shifts that already meet `minGuards`
+- Frontend must reload all shibuts after auto-assign to reflect combined manual + auto results
+
+## Migration Practices
+
+### File Naming
+- `supabase/migrations/NNN_descriptive_name.sql` (sequential numbering)
+- Current latest: `015_optimized_auto_assign.sql`
+
+### Applying Migrations
+- Migration history may be out of sync with Supabase migration table
+- **Preferred method**: `npx supabase db query --linked -f supabase/migrations/NNN_file.sql`
+- Alternative: Use Supabase MCP `execute_sql` tool
+- **Don't use** `npx supabase db push` if remote history table has entries not matching local files
+- To fix sync issues: `npx supabase migration repair --status reverted <versions...>`
+
+### Testing Algorithm Changes
+1. Write a Python simulation script (`sim_auto_assign.py`) to test locally
+2. Mirror the SQL logic in Python for rapid iteration
+3. Use scoring metrics to evaluate quality objectively
+4. Only apply to Supabase once the simulation achieves consistently high scores
+
+## Frontend Patterns
+
+### After Mutating Data
+Always refetch from DB after mutations to keep UI in sync:
+```js
+await supabase.rpc("rpc_auto_assign", params);
+await fetchShibutsim(); // full reload from DB
+```
+
+### Component Structure
+- Pages in `src/components/[PageName]/`
+- Shared components in `src/components/general_comps/`
+- Services in `src/services/`
+- All components use MUI with RTL support
+
+## Common Pitfalls to Avoid
+
+1. **Never use `supabase.from()` directly** — always use RPC (see rule)
+2. **Don't assume `dayId` starts at 0** — it starts at 1 (Sunday) in the `shifts` table
+3. **Don't forget `COALESCE`** on nullable columns like `camp_settings.min_rest_hours`
+4. **Column naming**: `camp_settings` uses `snake_case` (`camp_id`), most other tables use `"camelCase"`
+5. **Epoch timestamps are milliseconds**, not seconds — multiply/divide by 1000 when converting
+6. **Auto-assign must not overwrite** manually placed shifts — only fill empty slots
+7. **`ON COMMIT DROP`** for temp tables in RPC functions to avoid leaks across connections
+8. **Peer exclusions are bidirectional** — check both directions when filtering guards

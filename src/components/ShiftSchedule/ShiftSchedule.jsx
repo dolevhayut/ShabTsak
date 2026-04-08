@@ -151,6 +151,7 @@ function ShiftSchedule() {
   const [extraDays, setExtraDays] = useState(0);
   const [swapSource, setSwapSource] = useState(null);
   const sentinelRef = useRef(null);
+  const dayScrollContainerRef = useRef(null);
 
   // ── אירועים / דיווחים ─────────────────────────────────────────────────────
   const [events, setEvents] = useState([]);
@@ -162,14 +163,20 @@ function ShiftSchedule() {
   useEffect(() => {
     if (currentView !== "day") return;
     const el = sentinelRef.current;
+    const scrollRoot = dayScrollContainerRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setExtraDays((prev) => prev + 2); },
-      { rootMargin: "400px" }
+      {
+        // Observe within the day-scroll container on mobile (fallback to viewport otherwise).
+        root: scrollRoot || null,
+        rootMargin: "400px 0px",
+        threshold: 0.01,
+      }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [currentView, extraDays]);
+  }, [currentView]);
 
   const handleNavigate = useCallback((newDate) => {
     setCurrentDate(newDate);
@@ -1289,8 +1296,9 @@ function ShiftSchedule() {
             </Box>
           )}
           {currentView === "day" ? (
-            <div className="infinite-day-scroll">
-              {renderedDays.map((day, dayIdx) => {
+            <div className="calendar-mobile-scroll-wrapper" ref={dayScrollContainerRef}>
+              <div className="infinite-day-scroll">
+                {renderedDays.map((day, dayIdx) => {
                 const dayStart = new Date(day);
                 dayStart.setHours(0, 0, 0, 0);
                 const dayEnd = new Date(dayStart);
@@ -1300,49 +1308,50 @@ function ShiftSchedule() {
                   return s >= dayStart.getTime() && s < dayEnd.getTime();
                 });
                 const isFollowUp = dayIdx > 0;
-                return (
-                  <div
-                    key={dayStart.getTime()}
-                    className={isFollowUp ? "rbc-day-continuation" : undefined}
-                  >
-                    {isFollowUp && (
-                      <div className="day-divider-label">
-                        {format(day, "EEEE dd/MM", { locale: he })}
-                      </div>
-                    )}
-                    <Calendar
-                      localizer={localizer}
-                      culture="he"
-                      events={dayEvents}
-                      dayLayoutAlgorithm="no-overlap"
-                      resources={resources}
-                      resourceIdAccessor="resourceId"
-                      resourceTitleAccessor="resourceTitle"
-                      startAccessor="start"
-                      endAccessor="end"
-                      defaultView="day"
-                      view="day"
-                      onView={setCurrentView}
-                      views={["day", "week"]}
-                      step={60}
-                      timeslots={1}
-                      date={day}
-                      onNavigate={handleNavigate}
-                      toolbar={dayIdx === 0}
-                      selectable={isCommander}
-                      onSelectSlot={isCommander ? handleSelectSlot : undefined}
-                      onSelectEvent={onShibutsClick}
-                      eventPropGetter={eventPropGetter}
-                      components={{ event: EventComponent }}
-                      messages={messages}
-                      formats={rtlFormats}
-                      rtl={true}
-                      style={{ height: "auto" }}
-                    />
-                  </div>
-                );
-              })}
-              <div ref={sentinelRef} style={{ height: 1 }} />
+                  return (
+                    <div
+                      key={dayStart.getTime()}
+                      className={isFollowUp ? "rbc-day-continuation" : undefined}
+                    >
+                      {isFollowUp && (
+                        <div className="day-divider-label">
+                          {format(day, "EEEE dd/MM", { locale: he })}
+                        </div>
+                      )}
+                      <Calendar
+                        localizer={localizer}
+                        culture="he"
+                        events={dayEvents}
+                        dayLayoutAlgorithm="no-overlap"
+                        resources={resources}
+                        resourceIdAccessor="resourceId"
+                        resourceTitleAccessor="resourceTitle"
+                        startAccessor="start"
+                        endAccessor="end"
+                        defaultView="day"
+                        view="day"
+                        onView={setCurrentView}
+                        views={["day", "week"]}
+                        step={60}
+                        timeslots={1}
+                        date={day}
+                        onNavigate={handleNavigate}
+                        toolbar={dayIdx === 0}
+                        selectable={isCommander}
+                        onSelectSlot={isCommander ? handleSelectSlot : undefined}
+                        onSelectEvent={onShibutsClick}
+                        eventPropGetter={eventPropGetter}
+                        components={{ event: EventComponent }}
+                        messages={messages}
+                        formats={rtlFormats}
+                        rtl={true}
+                        style={{ height: "auto" }}
+                      />
+                    </div>
+                  );
+                })}
+                <div ref={sentinelRef} style={{ height: 1 }} />
+              </div>
             </div>
           ) : (
             <div style={{ height: "70vh" }}>
