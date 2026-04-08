@@ -1,8 +1,17 @@
-export const defaultValues = {
+const randomColor = () => {
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
+    return color;
+};
+
+export const getDefaultValues = () => ({
     name: "",
     mail: "",
     phone: "",
     personalId: "",
-    color: "#4B6B2A",
+    color: randomColor(),
     shouldBeAllocated: true,
-}
+})
+
+export const defaultValues = getDefaultValues();

@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { Controller, useForm } from "react-hook-form";
-import { defaultValues } from "components/GuardsPage/Guards/Guard/GuardDialogAddOrEdit/defaultValues.js";
+import { getDefaultValues } from "components/GuardsPage/Guards/Guard/GuardDialogAddOrEdit/defaultValues.js";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { schema } from "components/GuardsPage/Guards/Guard/GuardDialogAddOrEdit/schema.js";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material";
@@ -13,7 +13,7 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
   const isEditing = method === "PUT";
 
   const { handleSubmit, register, control, reset, formState } = useForm({
-    defaultValues: { ...(isEditing ? guardDetails : defaultValues), campId },
+    defaultValues: { ...(isEditing ? guardDetails : getDefaultValues()), campId },
     resolver: yupResolver(schema),
   });
 
@@ -64,7 +64,7 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
   // Function to handle closing the dialog.
   function handleCloseDialog() {
     close();
-    reset();
+    reset(isEditing ? guardDetails : getDefaultValues());
   }
 
   return (
@@ -91,7 +91,6 @@ export default function GuardDialogAddOrEdit({ guardDetails, campId, method, ope
             label="צבע חייל"
             type="color"
             fullWidth
-            defaultValue="#4B6B2A"
             {...register("color")}
             helperText={<FormError error={formState.errors?.color?.message} />}
           />
