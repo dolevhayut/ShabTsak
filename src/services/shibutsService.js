@@ -69,9 +69,32 @@ export async function getShibutsimOfCurrentMonthByCampId(campId, shibutsDates) {
     }
 }
 
-export async function getAutoShibutsimByCampIdAndDates(_campId, _shibutsDates) {
-    toast.info("שיבוץ אוטומטי עדיין לא מיושם בגרסת Supabase");
-    return [];
+export async function getAutoShibutsimByCampIdAndDates(campId, shibutsDates) {
+    try {
+        const creds = getCredentials();
+        const startTs = shibutsDates[0].getTime();
+        const endTs = shibutsDates[1].getTime();
+
+        const { data, error } = await supabase.rpc("rpc_auto_assign", {
+            ...creds,
+            p_camp_id: campId,
+            p_start_ts: startTs,
+            p_end_ts: endTs,
+        });
+        if (error) throw error;
+
+        const count = data?.length ?? 0;
+        if (count > 0) {
+            toast.success(`שיבוץ אוטומטי הושלם – נוצרו ${count} שיבוצים`);
+        } else {
+            toast.info("לא נמצאו משמרות פתוחות בטווח התאריכים שנבחר");
+        }
+        return data || [];
+    } catch (err) {
+        console.error(err);
+        toast.error("יש בעיה בשיבוץ האוטומטי, בבקשה נסה מאוחר יותר");
+        return [];
+    }
 }
 
 export async function deleteAutoShibutsim(campId, shibutsDates) {
