@@ -47,6 +47,17 @@ import dayjs from "dayjs";
 import { useAuthContext } from "@/context/AuthContext";
 import { useIsCommander } from "@/hooks/useIsCommander";
 
+function getContrastTextColor(hexColor) {
+  const hex = (hexColor || "#3174ad").replace("#", "");
+  if (hex.length !== 6) return "#ffffff";
+  const toLinear = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const r = toLinear(parseInt(hex.slice(0, 2), 16) / 255);
+  const g = toLinear(parseInt(hex.slice(2, 4), 16) / 255);
+  const b = toLinear(parseInt(hex.slice(4, 6), 16) / 255);
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.179 ? "#000000" : "#ffffff";
+}
+
 const locales = { he: he };
 const localizer = dateFnsLocalizer({
   format,
@@ -856,7 +867,7 @@ function ShiftSchedule() {
       backgroundColor: baseColor,
       borderRadius: "4px",
       opacity: 0.9,
-      color: "white",
+      color: getContrastTextColor(baseColor),
       border: "0px",
       display: "block",
     };
