@@ -49,6 +49,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import { useAuthContext } from "@/context/AuthContext";
 import { useIsCommander } from "@/hooks/useIsCommander";
+import { useTheme } from "@mui/material/styles";
 
 function getContrastTextColor(hexColor) {
   const hex = (hexColor || "#3174ad").replace("#", "");
@@ -128,6 +129,8 @@ function computeMinuteOffsets(startDate, endDate) {
 }
 
 function ShiftSchedule() {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === "dark";
   const { user } = useAuthContext();
   const isCommander = useIsCommander();
   const [dialogDetails, setDialogDetails] = useState({
@@ -977,7 +980,7 @@ function ShiftSchedule() {
     if (event.isPhantom) {
       return {
         style: {
-          backgroundColor: "rgba(220,38,38,0.07)",
+          backgroundColor: isDarkMode ? "rgba(220,38,38,0.18)" : "rgba(220,38,38,0.07)",
           border: "2px dashed #dc2626",
           borderRadius: "6px",
           color: "#dc2626",
@@ -992,8 +995,12 @@ function ShiftSchedule() {
       borderRadius: "4px",
       opacity: 0.9,
       color: getContrastTextColor(baseColor),
-      border: isSwapSelected ? "3px solid #fff" : "0px",
-      boxShadow: isSwapSelected ? "0 0 12px 3px rgba(255,255,255,0.7), 0 0 4px 1px rgba(0,0,0,0.4)" : undefined,
+      border: isSwapSelected ? `3px solid ${isDarkMode ? "#A5C982" : "#ffffff"}` : "0px",
+      boxShadow: isSwapSelected
+        ? (isDarkMode
+          ? "0 0 10px 2px rgba(165,201,130,0.65), 0 0 4px 1px rgba(0,0,0,0.65)"
+          : "0 0 12px 3px rgba(255,255,255,0.7), 0 0 4px 1px rgba(0,0,0,0.4)")
+        : undefined,
       display: "block",
       cursor: swapSource ? "pointer" : undefined,
       transform: isSwapSelected ? "scale(1.04)" : undefined,
@@ -1006,12 +1013,12 @@ function ShiftSchedule() {
         -45deg,
         transparent,
         transparent 4px,
-        rgba(255,255,255,0.18) 4px,
-        rgba(255,255,255,0.18) 8px
+        ${isDarkMode ? "rgba(0,0,0,0.26)" : "rgba(255,255,255,0.18)"} 4px,
+        ${isDarkMode ? "rgba(0,0,0,0.26)" : "rgba(255,255,255,0.18)"} 8px
       )`;
     }
     return { style };
-  }, [isCommander, swapSource]);
+  }, [isCommander, swapSource, isDarkMode]);
 
   const onSwapIconClick = useCallback(
     (e, event) => {
@@ -1134,17 +1141,17 @@ function ShiftSchedule() {
                     width: 26,
                     height: 26,
                     borderRadius: "50%",
-                    backgroundColor: "rgba(255,255,255,0.3)",
+                    backgroundColor: isDarkMode ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.3)",
                     cursor: "pointer",
                     transition: "background-color 0.15s, transform 0.15s",
                     "&:hover": {
-                      backgroundColor: "rgba(255,80,80,0.85)",
+                      backgroundColor: isDarkMode ? "rgba(220,38,38,0.85)" : "rgba(255,80,80,0.85)",
                       transform: "scale(1.15)",
                     },
                   }}
                 >
                   <DeleteOutlineIcon
-                    sx={{ fontSize: 18, color: "rgba(0,0,0,0.6)" }}
+                    sx={{ fontSize: 18, color: isDarkMode ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.6)" }}
                   />
                 </Box>
               </Tooltip>
@@ -1160,14 +1167,14 @@ function ShiftSchedule() {
                     height: 26,
                     borderRadius: "50%",
                     backgroundColor: isSwapSelected
-                      ? "rgba(255,255,255,0.95)"
+                      ? (isDarkMode ? "rgba(165,201,130,0.9)" : "rgba(255,255,255,0.95)")
                       : swapSource
-                        ? "rgba(255,255,255,0.85)"
-                        : "rgba(255,255,255,0.3)",
+                        ? (isDarkMode ? "rgba(165,201,130,0.75)" : "rgba(255,255,255,0.85)")
+                        : (isDarkMode ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.3)"),
                     cursor: "pointer",
                     transition: "background-color 0.15s, transform 0.15s",
                     "&:hover": {
-                      backgroundColor: "rgba(255,255,255,0.9)",
+                      backgroundColor: isDarkMode ? "rgba(165,201,130,0.9)" : "rgba(255,255,255,0.9)",
                       transform: "scale(1.15)",
                     },
                   }}
@@ -1175,7 +1182,7 @@ function ShiftSchedule() {
                   <SwapHorizIcon
                     sx={{
                       fontSize: 18,
-                      color: isSwapSelected ? "#1976d2" : swapSource ? "#1976d2" : "rgba(0,0,0,0.6)",
+                      color: isSwapSelected || swapSource ? "#1976d2" : (isDarkMode ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.6)"),
                     }}
                   />
                 </Box>
@@ -1185,7 +1192,7 @@ function ShiftSchedule() {
         </Box>
       );
     },
-    [isCommander, swapSource, onSwapIconClick, onDeleteIconClick]
+    [isCommander, swapSource, onSwapIconClick, onDeleteIconClick, isDarkMode]
   );
 
   const messages = {

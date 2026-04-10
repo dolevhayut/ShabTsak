@@ -31,6 +31,23 @@
   --transition-base: 0.18s ease;
 }
 
+:root[data-theme-mode="dark"] {
+  --background: #0F1117;
+  --surface: #1A1F2B;
+  --surface-secondary: #1E2535;
+  --border: #2D3142;
+  --border-strong: #3F3F46;
+  --text-primary: #F0F0F2;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #71717A;
+  --accent: #6B8F4B;
+  --accent-hover: #7AA258;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.35);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.45);
+}
+
 html {
   scroll-behavior: smooth;
   font-size: 16px;
@@ -100,6 +117,69 @@ body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:
 .rbc-time-view .rbc-header { border-bottom: none; }
 .rbc-time-view { overflow: visible; }
 .rbc-time-content { overflow: visible !important; max-height: none !important; }
+
+/* Keep react-big-calendar fully dark-aware (it ships light defaults). */
+:root[data-theme-mode="dark"] .rbc-calendar,
+:root[data-theme-mode="dark"] .rbc-time-view,
+:root[data-theme-mode="dark"] .rbc-month-view,
+:root[data-theme-mode="dark"] .rbc-time-header,
+:root[data-theme-mode="dark"] .rbc-time-content,
+:root[data-theme-mode="dark"] .rbc-timeslot-group,
+:root[data-theme-mode="dark"] .rbc-time-gutter,
+:root[data-theme-mode="dark"] .rbc-time-header-content,
+:root[data-theme-mode="dark"] .rbc-header,
+:root[data-theme-mode="dark"] .rbc-row-bg,
+:root[data-theme-mode="dark"] .rbc-day-bg,
+:root[data-theme-mode="dark"] .rbc-toolbar,
+:root[data-theme-mode="dark"] .rbc-label {
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme-mode="dark"] .rbc-today {
+  background-color: rgba(107, 143, 75, 0.16) !important;
+}
+
+:root[data-theme-mode="dark"] .rbc-off-range-bg {
+  background-color: #151926 !important;
+}
+
+:root[data-theme-mode="dark"] .rbc-time-view,
+:root[data-theme-mode="dark"] .rbc-time-header,
+:root[data-theme-mode="dark"] .rbc-time-content,
+:root[data-theme-mode="dark"] .rbc-month-view,
+:root[data-theme-mode="dark"] .rbc-header,
+:root[data-theme-mode="dark"] .rbc-day-bg + .rbc-day-bg,
+:root[data-theme-mode="dark"] .rbc-time-content > * + * > *,
+:root[data-theme-mode="dark"] .rbc-timeslot-group {
+  border-color: var(--border) !important;
+}
+
+:root[data-theme-mode="dark"] .rbc-current-time-indicator {
+  background-color: #F87171 !important;
+}
+
+:root[data-theme-mode="dark"] .rbc-toolbar button,
+:root[data-theme-mode="dark"] .rbc-btn-group button {
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+  background-color: var(--surface-secondary) !important;
+}
+
+:root[data-theme-mode="dark"] .rbc-toolbar button:hover,
+:root[data-theme-mode="dark"] .rbc-btn-group button:hover,
+:root[data-theme-mode="dark"] .rbc-toolbar button:focus,
+:root[data-theme-mode="dark"] .rbc-btn-group button:focus {
+  background-color: #2B3348 !important;
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme-mode="dark"] .rbc-toolbar button.rbc-active,
+:root[data-theme-mode="dark"] .rbc-btn-group button.rbc-active {
+  background-color: rgba(107, 143, 75, 0.28) !important;
+  border-color: #6B8F4B !important;
+  color: var(--text-primary) !important;
+}
 
 /* ── Calendar font sizes (accessibility) ── */
 .rbc-time-gutter .rbc-label {

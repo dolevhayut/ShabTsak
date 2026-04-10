@@ -30,6 +30,13 @@ export default function Layout() {
         dayjs.locale(he);
     }, []);
 
+    React.useEffect(() => {
+        const mode = darkMode ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme-mode', mode);
+        document.body.setAttribute('data-theme-mode', mode);
+        document.documentElement.style.colorScheme = mode;
+    }, [darkMode]);
+
     return (
         <CacheProvider value={cacheRtl}>
             <ThemeProvider theme={currentTheme}>
